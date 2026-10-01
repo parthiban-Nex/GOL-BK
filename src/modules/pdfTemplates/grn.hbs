@@ -1,0 +1,253 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Grn</title>
+    <style>
+      body { font-family: 'Inter'; margin: 0; padding: 0; font-size: 12px; }
+      .header { text-align: right; padding: 10px 20px; margin-bottom: -10px; }
+      .header img { max-width: 150px; } .line { border-bottom: 1px solid #000;
+      margin: 10px 0; } .outlet-details { padding: 0 20px; } .outlet-details p {
+      margin: 0; padding: 2px 0; font-size: 12px; } .center-text {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: darkred;
+        }
+      .details-container { display: flex; justify-content: space-between;
+      padding: 0 20px; margin: 20px 0; } .details-box { width: 48%; }
+      .details-box p { margin: 5px 0; font-size: 12px; } .details-box .key {
+      font-weight: bold; } .table-container { padding: 0 20px; margin-top: 20px;
+      } table { width: 100%; border-collapse: collapse; } table, th, td {
+      border: 1px solid black; } th, td { padding: 8px; text-align: left;
+      font-size: 12px; } .acknowledgment { padding: 0 20px; margin-top: 20px;
+      font-size: 12px; } .signature-container { display: flex; justify-content:
+      space-between; padding: 0 20px; margin-top: 40px; } .signature-box {
+      width: 25%; text-align: center; font-size: 12px; } .signature-box .line {
+      margin: 20px 0; border-bottom: 1px solid black; } .details-table-new
+      .details-table-new1 { width: 100%; border-collapse: collapse; margin: 10px 0; }
+      .details-table-new th, .details-table-new td { border: 1px solid #ffffff;
+      padding: 0px; /* Reduced padding */ text-align: left; font-size: 10px; /*
+      Reduced font size for table content */ } .details-table-new1 th, .details-table-new1 td {
+      border: 1px solid #ffffff; padding: 0px; /* Reduced padding */ text-align:
+      left; font-size: 12px; vertical-align: top; }
+      .details-table-sign th,
+      .details-table-sign td {
+        border: 1px solid #ffffff;
+        padding: 0px;
+        /*
+        Reduced padding */
+        text-align: left;
+        font-size: 12px;
+        /* Reduced font size
+        for table content */
+      }
+      @page {
+  margin-bottom: 40px;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  border-top: 1px solid black;
+  text-align: center;
+  font-size: 12px;
+}
+    </style>
+  </head>
+  <body>
+    <!-- Header section with logo -->
+    <div style='display: flex; justify-content:space-between'>
+      <div style='display:flex;'>
+        <img
+          src='data:image/png;base64,{{kiBase64Logo}}'
+          alt='Logo'
+          style='height: 75px; width: 75px;'
+        />
+        <table class='details-table-new' style='margin-left: 10px;'>
+          <tbody>
+            <tr>
+              <td>Ki Mobility Solutions Private Limited,
+                <br />
+                (Subsidiary of TVS Automobile Solutions PVT Ltd.,)</td>
+            </tr>
+            <tr>
+              <td>{{outlet.address}},</td>
+            </tr>
+            <tr>
+              <td>{{outlet.city}}</td>
+            </tr>
+            <tr>
+              <td>Mobile: {{outlet.mobile}},</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class='header'>
+        <img
+          src='data:image/png;base64,{{base64Logo}}'
+          alt='Logo'
+          style='height: 30px; width:100px'
+        />
+      </div>
+    </div>
+
+  
+ <div style="display: flex; flex-direction: row; border-bottom: 1px solid black; border-top: 1px solid black; line-height: 0.5; margin-top: 5px">
+      <p>DEALER GSTIN :</p>
+      <p>{{outlet.outlet_gst}}</p>
+    </div>
+
+    <div style="border-bottom: 1px solid black;">
+      <p style="color: #aa2e2b; font-size: 16px; font-weight: bold; line-height: 0.8; text-align: center">
+        SPARE PURCHASE RECEIPT
+      </p>
+    </div>
+
+    <table class='details-table-new1'>
+  <tbody>
+    <tr>
+      <th style='width: 20%;'>SUPPLIER CODE</th>
+      <td style='width: 5%;'>:</td>
+      <td style='width: 25%;'>{{firstGrn.vendor_code}}</td>
+
+      <th style='width: 20%;'>DOCUMENT</th>
+      <td style='width: 5%;'>:</td>
+      <td style='width: 25%;'>{{firstGrn.grn_no}}</td>
+    </tr>
+    <tr>
+      <th>SUPPLIER INVOICE NUMBER</th>
+      <td>:</td>
+      <td>{{firstGrn.invoice_number}}</td>
+
+      <th>DOC DATE</th>
+      <td>:</td>
+      <td>{{firstGrn.invoice_date}}</td>
+    </tr>
+    <tr>
+      <th>SUPPLIER ADDRESS</th>
+      <td>:</td>
+      <td>
+        <p>{{grnvendormap.address1}}</p>
+        <p>{{grnvendormap.address2}}</p>
+        <p>{{grnvendormap.city}} {{grnvendormap.pincode}}</p>
+        {{#if grnvendormap.mobileNumber}}
+          <p>Mob no: {{grnvendormap.mobileNumber}}</p>
+        {{/if}}
+      </td>
+
+      <th>BRANCH</th>
+      <td>:</td>
+      <td>{{outlet.branch}}</td>
+    </tr>
+    <tr>
+      <th>TIN No</th>
+      <td>:</td>
+      <td>0</td>
+
+      <th>E-SUGAM/ROAD PERMIT NO</th>
+      <td>:</td>
+      <td>{{firstGrn.e_sugam_no}}</td>
+    </tr>
+    <tr>
+      <th>LR NUMBER</th>
+      <td>:</td>
+      <td>{{firstGrn.lr_number}}</td>
+
+      <th>TRANSPORTER NAME</th>
+      <td>:</td>
+      <td>{{firstGrn.transport_name}}</td>
+    </tr>
+    <tr>
+      <th>LR DATE</th>
+      <td>:</td>
+      <td>{{firstGrn.lr_date}}</td>
+
+      <td colspan="3"></td>
+    </tr>
+  </tbody>
+</table>
+
+
+    <table style="border-collapse: collapse; margin-top: 10px; width: 100%;">
+      <thead>
+        <tr>
+          <th>SNO</th>
+          <th>CODE</th>
+          <th>NAME</th>
+          <th>Po Number</th>
+          <th>LOCATION</th>
+          <th>QTY</th>
+          <th>Cost</th>
+          <th>DISC</th>
+          <th>TAX</th>
+          <th>AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each grnparts}}
+        <tr>
+          <td>{{@index}}</td>
+          <td>{{this.item_code}}</td>
+          <td>{{this.item_description}}</td>
+          <td>{{../podetails.po_number}}</td>
+          <td>{{this.binlocation}}</td>
+          <td>{{this.quantity}}</td>
+          <td>{{this.cost}}</td>
+          <td>{{this.discount}}</td>
+          <td>{{this.tax}}</td>
+          <td>{{this.total}}</td>
+        </tr>
+        {{/each}}
+        <tr>
+          <td colspan="5">SUB TOTAL</td>
+          <td>{{firstGrn.total_quantity}}</td>
+          <td>{{firstGrn.total_cost}}</td>
+          <td>{{firstGrn.total_discount}}</td>
+          <td>{{firstGrn.total_tax}}</td>
+          <td>{{firstGrn.pdf_total}}</td>
+        </tr>
+        <tr>
+          <td colspan="9" style="text-align: right;">Freight Charges</td>
+          <td>{{firstGrn.frieght_charges}}</td>
+        </tr>
+        <tr>
+          <td colspan="9" style="text-align: right;">Mis Charges</td>
+          <td>{{firstGrn.mis_charges}}</td>
+        </tr>
+        <tr>
+          <td colspan="9" style="text-align: right;">Net Amount</td>
+          <td>{{nettotal}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="display: flex; justify-content: flex-start;">
+      <p style="font-weight: 600; margin-right: 10pt">AMOUNT IN WORDS:</p>
+      <p>{{amountInWords}} only</p>
+    </div>
+
+    <div style="margin-top: 50pt">
+      <p style="text-align: right; font-weight: 600">For {{outlet.outlet_name}}</p>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; margin-top: 40pt">
+      <div style="border-top: 2px solid #a2a0a0; padding-right: 30pt">
+        <p style="font-weight: 600; margin: 0">Customer Signature</p>
+      </div>
+      <div style="border-top: 2px solid #a2a0a0; padding-left: 30pt">
+        <p style="font-weight: 600; margin: 0">Authorized Signature</p>
+      </div>
+    </div>
+
+  <div class="footer">
+      <p style="text-align: center; margin: 0">Regd. Off. No. 10, Jawahar Road, Madurai – 625 002</p>
+      <p style="text-align: center; margin: 0">Mail id: enquiry@tvs.in, Website: www.tvsautomobilesolutions.com</p>
+      <p style="text-align: center; margin: 0">ki Mobility Solutions Private Limited (formerly Peninsula Auto Parts Private Limited)</p>
+    </div>
+
+   
+  </body>
+</html>

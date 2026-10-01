@@ -1,0 +1,314 @@
+<html>
+  <head>
+    <title>JobCard</title>
+    <style>
+      body { font-family: 'Inter'; margin: 0; padding: 0; font-size: 12px; /*
+      Default font size */ } .header { text-align: right; padding: 0px 20px;
+      margin-bottom: -10px; } .header img { max-width: 150px; } .line {
+      border-bottom: 1px solid #000; margin: 10px 0; } .branch-details,
+      .customer-details, .booking-details { padding: 0 20px; } .center-text {
+      text-align: center; font-size: 18px; /* Reduced size for the centered
+      "ESTIMATE" text */ font-weight: bold; margin: 5px 0; color: darkred; }
+      .details-container { display: flex; justify-content: space-between;
+      margin: 20px 0; } .details-box { width: 48%; padding: 10px; } .details-box
+      p { margin: 0; padding: 3px 0; /* Reduced padding */ font-size: 12px; /*
+      Reduced font size for key-value pairs */ } .details-box .key {
+      font-weight: bold; } .details-table, .items-table { width: 100%;
+      border-collapse: collapse; margin: 10px 0; } .details-table-new,
+      .items-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+      .details-table-new th, .details-table-new td, .items-table th,
+      .items-table td { border: 1px solid #ffffff; padding: 0px; /* Reduced
+      padding */ text-align: left; font-size: 10px; /* Reduced font size for
+      table content */ } .details-table td, .items-table th, .items-table td {
+      border: 2px solid #000; padding: 5px; /* Reduced padding */ text-align:
+      left; font-size: 10px; /* Reduced font size for table content */ }
+      .details-table th { border: 2px solid #000; padding: 5px; text-align:
+      center; font-size: 10px; } .footer { padding: 10px 20px; font-size: 12px;
+      /* Reduced font size for footer content */ } .footer .signatures {
+      display: flex; justify-content: space-between; } .bold { font-weight:
+      bold; }
+    </style>
+  </head>
+  <body>
+    <div style='display: flex; justify-content:space-between'>
+      <div style='display:flex;'>
+        <table class='details-table-new' style='margin-left: 10px;'>
+          <tbody>
+            <tr>
+                            <td>{{outlet.outletName}}</td>
+
+            </tr>
+            <tr>
+              <td>{{outlet.address}},</td>
+            </tr>
+            <tr>
+              <td>{{outlet.city}},{{outlet.state}},{{outlet.pincode}}</td>
+            </tr>
+            <tr>
+              <td>Mobile: {{outlet.mobile}},</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class='header'>
+        <img
+          src='data:image/png;base64,{{base64Logo}}'
+          alt='Logo'
+          style='height: 30px; width:100px'
+        />
+      </div>
+    </div>
+    <div class='line'></div>
+    <table class='details-table-new'>
+      <thead>
+        <tr>
+          <th style='display: flex; justify-content:space-between;'><div
+            >PAN</div><div>:</div></th>
+          <td></td>
+        </tr>
+        <tr>
+          <th style='display: flex; justify-content:space-between;'><div
+            >GSTIN</div><div>:</div></th>
+          <td>{{outlet.dealerGstin}}</td>
+        </tr>
+        <tr><th colspan='4'><div class='line'></div></th></tr>
+        <tr>
+          <th colspan='4' style='text-align: center;'><div class='center-text'>JOB CARD</div></th>
+        </tr>
+        <tr><th colspan='4'><div class='line'></div></th></tr>
+      </thead>
+      <tbody>
+        <tr style='vertical-align: top;'>
+          <th style='display: flex; justify-content:space-between'><div
+            >Customer</div><div>:</div></th>
+          <td>
+            {{customer.name}}
+            <br />
+            {{customer.address}}
+            <br />
+            {{customer.city}},
+            {{customer.state}}
+            <br />
+            {{customer.pincode}}
+            <br />
+            {{customer.mobile}}
+          </td>
+          <th style='display: flex; justify-content:space-between'><div>Job card
+              number</div><div>:</div></th>
+          <td>{{customer.documentName}}</td>
+        </tr>
+        <tr>
+          <th style='display: flex; justify-content:space-between'><div>Customer
+              GSTIN</div><div>:</div></th>
+          <td>{{customer.gstin}}</td>
+          <th style='display: flex; justify-content:space-between'><div
+            >Date</div><div>:</div></th>
+          <td>{{customer.documentDate}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th colspan='2'>VEH/ENG DETAILS</th>
+          <th colspan='2'>JOBCARD DETAILS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style='width: 25%;'>Vehicle</td>
+          <td style='width: 25%;'>{{customer.model}}</td>
+          <td style='width: 25%;'>Checkin time</td>
+          <td style='width: 25%;'>{{customer.checkinTime}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Registration No</td>
+          <td style='width: 25%;'>{{customer.regNo}}</td>
+          <td style='width: 25%;'>Attended time</td>
+          <td style='width: 25%;'>{{customer.repairType}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Chassis No</td>
+          <td style='width: 25%;'>{{customer.chassisNo}}</td>
+          <td style='width: 25%;'>Document Created</td>
+          <td style='width: 25%;'>{{customer.serviceType}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Engine No</td>
+          <td style='width: 25%;'>{{customer.engNo}}</td>
+          <td style='width: 25%;'>Expected Completion</td>
+          <td style='width: 25%;'>{{customer.expectedTime}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>KM reading</td>
+          <td style='width: 25%;'>{{customer.kmReading}}</td>
+          <td style='width: 25%;'>Spare amount</td>
+          <td style='width: 25%;'>{{partAmtRound}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Repair type</td>
+          <td style='width: 25%;'>{{customer.repairType}}</td>
+          <td style='width: 25%;'>Labour Amount</td>
+          {{#if customer.isAJC}}
+          <td style='width: 25%;'>{{totalRoundLabAmountAJC}}</td>
+          {{else}}
+          <td style='width: 25%;'>{{labAmtRound}}</td>
+          {{/if}}
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Service Type</td>
+          <td style='width: 25%;'>{{customer.serviceType}}</td>
+          <td style='width: 25%;'>Total cost</td>
+          <td style='width: 25%;'>{{totalLaborPartsAmountRnd}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Service Engineer</td>
+          <td style='width: 25%;'>{{customer.createdBy}}</td>
+          <td style='width: 25%;'></td>
+          <td style='width: 25%;'></td>
+        </tr>
+      </tbody>
+    </table>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th style='width: 50%; text-align: center;'>CUSTOMER VOICE</th>
+          <th style='width: 50%; text-align: center;'>SERVICE ENGINEER REMARKS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style='width: 50%;'>{{customer.customerVoice}}</td>
+          <td style='width: 50%;'>{{customer.serviceEngineerRemarks}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th style='text-align: center; width:10%'>SNO</th>
+          <th style='text-align: center; width:20%'>CODE</th>
+          <th style='text-align: center; width:50%'>DESCRIPTION</th>
+          <th style='text-align: center; width:20%'>QUANTITY</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if labours.length}}
+        <tr>
+          <td colspan='4'>Labour</td>
+        </tr>
+        {{#each labours}}
+          <tr>
+            <td>{{this.sno}}</td>
+            <td>{{this.rot_code}}</td>
+            <td>{{this.description}}</td>
+            <td>{{this.quantity}}</td>
+          </tr>
+        {{/each}}
+        {{/if}}
+        {{#if parts.length}}
+        <tr>
+          <td colspan='4'>Parts</td>
+        </tr>
+        {{#each parts}}
+          <tr>
+            <td>{{this.sno}}</td>
+            <td>{{this.code}}</td>
+            <td>{{this.description}}</td>
+            <td>{{this.quantity}}</td>
+          </tr>
+        {{/each}}
+        {{/if}}
+        {{#if partIndents.length}}
+        <tr>
+          <td colspan='4'>Parts Indents</td>
+        </tr>
+        {{#each partIndents}}
+          <tr>
+            <td>{{this.sno}}</td>
+            <td>{{this.code}}</td>
+            <td>{{this.description}}</td>
+            <td>{{this.quantity}}</td>
+          </tr>
+        {{/each}}
+        {{/if}}
+
+      </tbody>
+    </table>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th colspan='2'>LAST JOB CARD DETAILS</th>
+          <th colspan='2'>AMOUNT DETAILS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style='width: 25%;'>Job Card No</td>
+          <td style='width: 25%;'>{{prevData.cardNo}}</td>
+          <td style='width: 25%;'>Spare Amount</td>
+          <td style='width: 25%;'>{{prevTotal.partsAmt}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Job Card Date</td>
+          <td style='width: 25%;'>{{prevData.cardDate}}</td>
+          <td style='width: 25%;'>Labour Amount</td>
+          <td style='width: 25%;'>{{prevTotal.labourAmt}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Repair Type</td>
+          <td style='width: 25%;'>{{prevData.repairType}}</td>
+          <td style='width: 25%;'>Total Amount</td>
+          <td style='width: 25%;'>{{prevTotal.grandAmt}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Service Type</td>
+          <td style='width: 25%;'>{{prevData.serviceType}}</td>
+          <td style='width: 25%;'>KM Reading</td>
+          <td style='width: 25%;'>{{prevData.kmReading}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Mechanic Name</td>
+          <td style='width: 25%;'></td>
+          <td style='width: 25%;'></td>
+          <td style='width: 25%;'></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      I am leaving the vehicle detailed in this Repair Order for repairs and for
+      attending to such jobs that are listed in the Repair Order Sheet and in
+      the Continuation Repair Order Sheets.You may also carryout such other jobs
+      as you find it necessary during the course of repairs and after
+      dismantaling to make the vehicle roadworthy.
+    </p>
+    <p>
+      I hereby agree and definitely understand that Messrs.TEST MFCL. assume no
+      responsibility for loss or damage by whatsoever means to vehicle placed
+      with them for storage,sale or repair.The above vehicle left in your
+      premises is entirely at my/my employers/owners risk as accidents,damage by
+      fire or any other cause. I also authorize you to carry out the road
+      test/test drive in my vehicle at my/my employers/owners risk/cost.
+    </p>
+    <p>
+      All disputes arising out of or in connection with this bill/invoice shall
+      be subject to exclusive jurisdiction of the Courts in Chennai alone.
+    </p>
+    <table class='details-table-new'>
+      <thead>
+        <tr>
+          <th
+            style='padding-left:0px; padding-top:10px;'
+          >______________________</th>
+          <th
+            style='text-align: right; padding-top:10px;'
+          >______________________</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>Customer Signature</th>
+          <th style='text-align: right; padding-top:10px;'>Authorized Signature</th>
+        </tr>
+      </thead>
+    </table>
+  </body>
+</html>

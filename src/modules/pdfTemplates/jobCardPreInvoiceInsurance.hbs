@@ -1,0 +1,463 @@
+<html>
+  <head>
+    <title>JobCardPreInvoiceInsurance</title>
+    <style>
+      body { font-family: 'Inter'; margin: 0; padding: 0; font-size: 12px; /*
+      Default font size */ } .header { text-align: right; padding: 0px 20px;
+      margin-bottom: -10px; } .header img { max-width: 150px; } .line {
+      border-bottom: 1px solid #000; margin: 10px 0; } .branch-details,
+      .customer-details, .booking-details { padding: 0 20px; } .center-text {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: darkred;
+        } .details-container { display: flex; justify-content: space-between;
+      margin: 20px 0; } .details-box { width: 48%; padding: 10px; } .details-box
+      p { margin: 0; padding: 3px 0; /* Reduced padding */ font-size: 12px; /*
+      Reduced font size for key-value pairs */ } .details-box .key {
+      font-weight: bold; } .details-table, .items-table { width: 100%;
+      border-collapse: collapse; margin: 10px 0; } .details-table-new,
+      .details-table-new1, .details-table-data { width: 100%; border-collapse:
+      collapse; margin: 10px 0; } .details-condition{ margin-top: 150px; }
+      .details-table-new th, .details-table-new td, .items-table th,
+      .items-table td { border: 1px solid #ffffff; padding: 0px; /* Reduced
+      padding */ text-align: left; font-size: 10px; /* Reduced font size for
+      table content */ } .details-table-new1 th, .details-table-new1 td {
+      border: 1px solid #ffffff; padding: 0px; /* Reduced padding */ text-align:
+      left; font-size: 12px; /* Reduced font size for table content */
+      vertical-align: top; } .details-table td { border: 1px solid #000;
+      padding: 5px; /* Reduced padding */ text-align: left; font-size: 10px; /*
+      Reduced font size for table content */ } .details-table-data td { border:
+      1px solid #000; padding: 5px; /* Reduced padding */ text-align: right;
+      font-size: 10px; } .details-table th, .details-table-data th { border: 1px
+      solid #000; padding: 5px; text-align: center; font-size: 10px; } .footer {
+      padding: 10px 20px; font-size: 12px; /* Reduced font size for footer
+      content */ } .footer .signatures { display: flex; justify-content:
+      space-between; } .bold { font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div style='display: flex; justify-content:space-between'>
+      <div style='display:flex'>
+        
+        <table class='details-table-new' style='margin-left: 10px;'>
+          <tbody>
+            <tr>
+                            <td>{{outlet.outletName}}</td>
+
+            </tr>
+            <tr>
+              <td>{{outlet.address}},</td>
+            </tr>
+            <tr>
+              <td>{{outlet.city}},{{outlet.state}},{{outlet.pincode}}</td>
+            </tr>
+            <tr>
+              <td>Mobile: {{outlet.mobile}},</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class='header'>
+        <img
+          src='data:image/png;base64,{{base64Logo}}'
+          alt='Logo'
+          style='height: 30px; width:100px'
+        />
+      </div>
+    </div>
+    <div class='line'></div>
+    <table class='details-table-new1' style='width: 40%;'>
+      <tbody>
+        <tr>
+          <td style='width: 45%;'>PAN</td>
+          <td style='width: 10%;'>:</td>
+          <td style='width: 45%;'></td>
+        </tr>
+        <tr>
+          <td style='width: 45%;'>GSTIN</td>
+          <td style='width: 10%;'>:</td>
+          <td style='width: 45%;'>{{outlet.dealerGstin}}</td>
+        </tr>
+        <tr>
+          <td style='width: 45%;'>CIN</td>
+          <td style='width: 10%;'>:</td>
+          <td style='width: 45%;'></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class='line'></div>
+    <div class='center-text'>JOB CARD PREINVOICE</div>
+    <div class='line'></div>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th colspan='2' style='text-align: center;'>BILLING TO</th>
+          <th colspan='2' style='text-align: center;'>SHIP TO/Place of supply</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style='width: 25%;'>Insurance/Cust code</td>
+          <td style='width: 25%;'>{{insuranceData.insurance_provider_id}}</td>
+          <td style='width: 25%;'>Customer Code</td>
+          <td style='width: 25%;'>{{customer.customer_code}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Insurance/Cust name</td>
+          <td style='width: 25%;'>{{insuranceData.insurance_provider_name}}</td>
+          <td style='width: 25%;'>Customer Name</td>
+          <td style='width: 25%;'>{{customer.name}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Insurer/Cust GSTIN</td>
+          <td style='width: 25%;'>{{insuranceData.gstin_number}}</td>
+          <td style='width: 25%;'>Customer GSTIN</td>
+          <td style='width: 25%;'>{{customer.gstin}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Billing Address</td>
+          <td style='width: 25%;'>{{insuranceData.insurance_address}}</td>
+          <td style='width: 25%;'>Delivery Address</td>
+          <td style='width: 25%;'>{{customer.address}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Document Name</td>
+          <td style='width: 25%;'>{{customer.documentName}}</td>
+          <td style='width: 25%;'>Model</td>
+          <td style='width: 25%;'>{{customer.model}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Document Date</td>
+          <td style='width: 25%;'>{{customer.documentDate}}</td>
+          <td style='width: 25%;'>Cust State Code</td>
+          <td style='width: 25%;'>{{customer.pincode}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Branch</td>
+          <td style='width: 25%;'>{{outlet.name}}</td>
+          <td style='width: 25%;'>Vehicle Regd No</td>
+          <td style='width: 25%;'>{{customer.regNo}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Insurance Policy No</td>
+          <td style='width: 25%;'>{{insuranceData.policy_no}}</td>
+          <td style='width: 25%;'>Km Reading</td>
+          <td style='width: 25%;'>{{customer.kmReading}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Insurance Claim No</td>
+          <td style='width: 25%;'>{{insuranceData.claim_no}}</td>
+          <td style='width: 25%;'>Insurance Expiry Date </td>
+          <td style='width: 25%;'>{{insuranceData.policy_exp_date}}</td>
+        </tr>
+        <tr>
+          <td style='width: 25%;'>Surveyor Name</td>
+          <td style='width: 25%;'>{{insuranceData.surveyor_name}}</td>
+          <td style='width: 25%;'>Surveyor Mobile Number</td>
+          <td style='width: 25%;'>{{insuranceData.surveyor_mob}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <table class='details-table-data'>
+      <thead>
+        <tr>
+          <th
+            colspan='14'
+            style='border: #ffffff; border-bottom:1px solid #000; text-align:left'
+          >LABOURS</th>
+        </tr>
+        <tr>
+          <th style='width: 3%;'>SNO</th>
+          <th>CODE</th>
+          <th>DESCRIPTION</th>
+          <th>HSN/SAC</th>
+          <th>QTY</th>
+          <th>TOTAL VALUE</th>
+          <th>DISC</th>
+          {{! <th>Tax Val after DISC</th> }}
+          <th>CGST %</th>
+          <th>CGST</th>
+          <th>SGST %</th>
+          <th>SGST</th>
+          <th>IGST %</th>
+          <th>IGST</th>
+          <th style='width: 10%;'>AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each labours}}
+          <tr>
+            <td style='text-align: center;'>{{this.sno}}</td>
+            <td style='text-align: center;'>{{this.rot_code}}</td>
+            <td style='text-align: center;'>{{this.description}}</td>
+            <td style='text-align: center;'>{{this.hsn}}</td>
+            <td>{{this.quantity}}</td>
+            <td>{{this.totalInsuranceamt}}</td>
+            <td>{{this.discount}}</td>
+            {{!-- <td>{{this.valafterdisc}}</td> --}}
+            <td>{{this.cgst}}</td>
+            <td>{{this.cgstInsuranceAmount}}</td>
+            <td>{{this.sgst}}</td>
+            <td>{{this.sgstInsuranceAmount}}</td>
+            <td>{{this.igst}}</td>
+            <td>{{this.igstInsuranceAmount}}</td>
+            <td>{{this.totalInsuranceamtwithTx}}</td>
+          </tr>
+        {{/each}}
+        <tr>
+          <td colspan='4' style='text-align: right;'>SUB TOTAL</td>
+          <td>{{totalLaborQuantity}}</td>
+          <td></td>
+          <td>{{totalInsureanceLaborDiscount}}</td>
+          <td></td>
+          <td>{{totalInsureanceLaborSGst}}</td>
+          <td></td>
+
+          {{! <td></td> }}
+          <td>{{totalInsureanceLaborCGst}}</td>
+          <td></td>
+          <td>{{totalInsureanceLaborIGst}}</td>
+          <td>{{totalInsureanceLaborAmount}}</td>
+        </tr>
+        <tr>
+          <td colspan='13' style='text-align: right;'>TOTAL GST on LABOURS</td>
+          <td>{{totalInsureanceGstOnLabor}}</td>
+        </tr>
+        <tr>
+          <td colspan='13' style='text-align: right;'>TOTAL DISCOUNT on LABOURS</td>
+          <td>{{totalInsureanceLaborDiscount}}</td>
+        </tr>
+        <tr>
+          <td colspan='13' style='text-align: right;'>TOTAL of LABOURS</td>
+          <td>{{totalInsureanceLaborAmount}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <table class='details-table-data'>
+      <thead>
+        <tr>
+          <th
+            colspan='16'
+            style='border: #ffffff; border-bottom:1px solid #000; text-align:left'
+          >SPARES</th>
+        </tr>
+        <tr>
+          <th style='width: 3%;'>SNO</th>
+          <th>CODE</th>
+          <th>DESCRIPTION</th>
+          <th>HSN/SAC</th>
+          <th>QTY</th>
+          <th>PER QTY RATE</th>
+          {{! <th>Taxable value</th>
+                <th>DISC</th>
+                <th>Tax Val after DISC</th> }}
+          <th>CGST %</th>
+          <th>CGST</th>
+          <th>SGST %</th>
+          <th>SGST</th>
+          <th>IGST %</th>
+          <th>IGST</th>
+          <th style='width: 10%;'>AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each parts}}
+          <tr>
+            <td style='text-align: center;'>{{this.sno}}</td>
+            <td style='text-align: center;'>{{this.code}}</td>
+            <td style='text-align: center;'>{{this.description}}</td>
+            <td style='text-align: center;'>{{this.hsn}}</td>
+            <td>{{this.quantity}}</td>
+            <td>{{this.rate}}</td>
+            {{!-- <td>{{this.totalval}}</td>
+                <td>{{this.discount}}</td>
+                <td>{{this.valafterdisc}}</td> --}}
+            <td>{{this.cgst}}</td>
+            <td>{{this.cgstamt}}</td>
+            <td>{{this.sgst}}</td>
+            <td>{{this.sgstamt}}</td>
+            <td>{{this.igst}}</td>
+            <td>{{this.igstamt}}</td>
+            <td>{{this.totalamt}}</td>
+          </tr>
+        {{/each}}
+        <tr>
+          <td colspan='4' style='text-align: right;'>SUB TOTAL</td>
+          <td>{{totalPartsQuantity}}</td>
+          <td></td>
+          <td></td>
+          <td>{{totalPartsCGst}}</td>
+          <td></td>
+          <td>{{totalPartsSGst}}</td>
+          <td></td>
+          <td>{{totalPartsIGst}}</td>
+          <td>{{totalPartsAmount}}</td>
+          {{! <td></td>
+                <td></td>
+                <td></td> }}
+        </tr>
+        <tr>
+          <td colspan='12' style='text-align: right;'>TOTAL GST on SPARES</td>
+          <td>{{totalGstOnParts}}</td>
+        </tr>
+        {{! <tr>
+                <td colspan="12" style="text-align: right;">TOTAL DISCOUNT on SPARES</td>
+                <td></td>
+            </tr> }}
+        <tr>
+          <td colspan='12' style='text-align: right;'>TOTAL of SPARES</td>
+          <td>{{totalPartsAmount}}</td>
+        </tr>
+        {{! <tr>
+                <td colspan="12" style="text-align: right;">GRAND TOTAL</td>
+                <td></td>
+            </tr> }}
+      </tbody>
+    </table>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th style='width: 20%;'>Total Labour Amount</th>
+          <th style='width: 20%;'>Total Parts Amount</th>
+          {{! <th style="width: 20%;">Total Labour &amp; Parts Amount</th> }}
+          {{! <th style="width: 20%;">Excess and Salvage Charges</th> }}
+          <th style='width: 20%;'>Payable Total Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{totalInsureanceLaborAmount}}</td>
+          <td>{{totalPartsAmount}}</td>
+          {{! <td></td> 
+                <td></td>}}
+          <td>{{totalLaborPartsAmount}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th style='width: 50%;'>ADVICE</th>
+          <th style='width: 50%;'> SERVICE ENGINEER REMARKS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style='width: 50%;'>{{customer.customerVoice}}</td>
+          <td style='width: 50%;'>{{customer.serviceEngineerRemarks}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <br />
+    {{!-- <div class='details-condition'>
+      <table
+        style='width: 100%;
+            border-collapse: collapse;'
+      >
+        <thead>
+          <tr>
+            <th style='text-align: center;'><u>TERMS &amp; CONDITIONS</u></th>
+          </tr>
+        </thead>
+      </table>
+
+      <p style="text-align: center;"><u>Conditions Of Sale</u></p>
+      <p>
+        1. Our risk and responsibility ceases on delivery of the goods from our 
+        Premises or to carriers. Customers are kindly requested to examine the 
+        goods before taking delivery.
+      </p>
+      <p>
+        <span>
+          2. All Sales tax local or Central &#40;wherever applicable&#41; which 
+          may be levied or become leviable under any legislation now in force or 
+          enacted hereafter shall be payable by the purchaser in addition to the 
+          price quoted / charged by us.
+        </span>
+      </p>
+      <p>
+        3. In addition, handling charges at appropriate rates are not included in 
+        the price quoted / charged will also be payable.
+      </p>
+      <p>
+        4. The company is not liable for delays or no delivery due to contingencies 
+        arising from War,Strikes, Labour or Political Agitation, Lockouts , Fire, Flood, 
+        Drought, Delays on rail or at sea, Breakdown or other causes beyond the control 
+        of the sellers, whether in course of transit or delivery. The sale is without 
+        responsibility on the part of the sellers for any loss rising therefrom.
+      </p>
+      <p>
+        5. Interest at 18% Per annum will be charged on overdue accounts and this will 
+        accrue from the date of the bill.
+      </p>
+      <p style="text-align: center;"><u>Additional condition in respect of Sale of Parts</u></p>
+      <p>
+        1. Terms, Prices, Discounts and Special Quotation are not subject to repetition,
+        Returned goods will not be accepted.
+      </p>
+      <p>
+        2. We undertake no responsibility for breakage, shortage or leakage in transit
+        in spite of our paying Careful attention to the despatch.
+      </p>
+      <p style="text-align: center;"><u>Additional condition in respect of Service</u></p>
+      <p>
+        1. Terms, Prices, Discounts and Special Quotation are not subject to repetition.
+      </p>
+      <p>
+        2. The Company reserves the right to with hold delivery and detain the vehicle 
+        spares entrusted to It for repairs by the Customer till its entire repair bills 
+        including repair charges. Value of parts and Accessories and garage rent at 
+        appropriate rates are paid by the customer before effecting Delivery of the 
+        repaired vehicles/spares him/her.
+      </p>
+      <p>
+        3. The company &#40;Seller/Reseller&#41; is entitled to being to sale any 
+        vehicles/spares entrusted to it for repairs by customers by public auction or 
+        private contract or otherwise in case its entire repair Bill including repair 
+        charges and value of parts and accessories supplied, are not fully paid by the 
+        customer within a period of 3 months from the date the company advise the customer 
+        that the Repaired vehicle / spare is ready for delivery, and further reserves 
+        its right to process against the customer for any shortfall ascertained to be 
+        due to the company after adjusting the sale Proceeds less sale expenses.
+      </p>
+      <p>
+        4. GST is applicable @ appropriate rate for works contract as GST provisions 
+        in the respective states
+      </p>
+    </div> --}}
+    <br />
+    <table class='details-table-new1'>
+      <thead>
+        <tr>
+          <th colspan='2' style='text-align: right; padding-top:10px;'>For
+            {{outlet.name}}</th>
+        </tr>
+        <tr>
+          <th
+            style='padding-left:0px; padding-top:10px;'
+          >______________________</th>
+          <th
+            style='text-align: right; padding-top:10px;'
+          >______________________</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>Customer Signature</th>
+          <th style='text-align: right; padding-top:10px;'>Authorized Signature</th>
+        </tr>
+      </thead>
+    </table>
+   <div
+      style='
+            position:absolute;
+            top:450px;
+            left:0px;
+            font-size: 50px;
+            color: rgb(121, 121, 121);
+            transform:rotate(-45deg);
+            opacity: 0.5;'
+    >This copy is Draft &amp; not Original
+    </div>
+  </body>
+</html>

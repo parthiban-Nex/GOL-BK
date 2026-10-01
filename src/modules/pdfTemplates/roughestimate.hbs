@@ -1,0 +1,365 @@
+<html>
+  <head>
+    <title>Estimate</title>
+    <style>
+      body { font-family: 'Inter'; margin: 0; padding: 0; font-size: 12px; }
+      .header { text-align: right; padding: 10px 20px; margin-bottom: -10px; }
+      .header img { max-width: 150px; }
+      .line { border-bottom: 1px solid #000; margin: 10px 0; }
+      .branch-details, .customer-details, .booking-details { padding: 0 20px; }
+      .center-text { text-align: center; font-size: 18px; font-weight: bold; margin: 20px 0; color: darkred; }
+      .details-container { display: flex; justify-content: space-between; margin: 20px 0; }
+      .details-box { width: 48%; padding: 10px; }
+      .details-box p { margin: 0; padding: 3px 0; font-size: 12px; }
+      .details-box .key { font-weight: bold; }
+      .details-table, .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+      .details-table td, .items-table td { border: 2px solid #000; padding: 5px; text-align: right; font-size: 10px; }
+      .details-table th, .items-table th { border: 2px solid #000; padding: 5px; text-align: center; font-size: 10px; }
+      .footer { padding: 10px 20px; font-size: 12px; }
+      .footer .signatures { display: flex; justify-content: space-between; }
+      .bold { font-weight: bold; }
+      .details-table-new, .details-table-new1 { width: 100%; border-collapse: collapse; margin: 10px 0; }
+      .details-table-new th, .details-table-new td { border: 1px solid #ffffff; padding: 0px; text-align: left; font-size: 10px; }
+      .details-table-sign th, .details-table-sign td { border: 1px solid #ffffff; padding: 0px; text-align: left; font-size: 12px; }
+      .details-table-new1 th, .details-table-new1 td { border: 1px solid #ffffff; padding: 0px; text-align: left; font-size: 12px; vertical-align: top; }
+      .subtotal-row { background-color: #f5f5f5; font-weight: bold; }
+      .section-header { margin-top: 20px; margin-bottom: 10px; color: #333; }
+    </style>
+  </head>
+  <body>
+    <div style='display: flex; justify-content:space-between'>
+      <div style='display:flex;'>
+        <table class='details-table-new' style='margin-left: 10px;'>
+          <tbody>
+            <tr>
+              <td>{{branch.outletName}}</td>
+            </tr>
+            <tr>
+              <td>{{branch.address}},</td>
+            </tr>
+            <tr>
+              <td>{{branch.city}},{{branch.state}},{{branch.pincode}}</td>
+            </tr>
+            <tr>
+              <td>Mobile: {{branch.mobile}},</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class='header'>
+        <img src='data:image/png;base64,{{base64Logo}}' alt='Logo' style='height: 30px; width:100px' />
+      </div>
+    </div>
+    <div class='line'></div>
+    <div class='branch-details'>
+      <p><span class='key'>Email:</span> {{branch.email}}.</p>
+      <p><span class='key'>DEALER GSTIN:</span> {{branch.dealerGstin}}</p>
+    </div>
+    <div class='line'></div>
+    <div class='center-text'>ESTIMATE</div>
+    <div class='line'></div>
+
+    <table class='details-table-new1'>
+      <body>
+        <tr>
+          <th style='width: 20%;'>CUSTOMER</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{booking.customerName}}</td>
+          <th style='width: 20%; '>DOCUMENT NAME</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.documentName}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>CUSTOMER GSTIN</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{booking.gstin}}</td>
+          <th style='width: 20%; '>DOCUMENT DATE</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.documentDate}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>ADDRESS</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{booking.address}}</td>
+          <th style='width: 20%; '>BRANCH</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.branch}}</td>
+        </tr>
+      </body>
+    </table>
+
+    <!-- REMOVE & REFIT Section -->
+    <h4 class="section-header">REMOVE & REFIT</h4>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th>SNO</th>
+          <th>DESCRIPTION</th>
+          <th>QTY</th>
+          <th>RATE</th>
+          <th>TAX%</th>
+          <th>TOTAL AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if removeRefit.length}}
+          {{#each removeRefit}}
+            <tr>
+              <td style='text-align: center;'>{{this.sno}}</td>
+              <td style='text-align: left;'>{{this.description}}</td>
+              <td style='text-align: right;'>{{this.qty}}</td>
+              <td style='text-align: right;'>{{this.rate}}</td>
+              <td style='text-align: right;'>{{this.taxPercentage}}%</td>
+              <td style='text-align: right;'>{{this.amount}}</td>
+            </tr>
+          {{/each}}
+          <tr class="subtotal-row">
+            <td colspan="5" style='text-align: right; font-weight: bold;'>SUB TOTAL</td>
+            <td style='text-align: right; font-weight: bold;'>{{totals.removeRefitTotal}}</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan="6" style='text-align: center;'>No items</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+
+    <!-- TINKERING Section -->
+    <h4 class="section-header">TINKERING</h4>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th>SNO</th>
+          <th>DESCRIPTION</th>
+          <th>QTY</th>
+          <th>RATE</th>
+          <th>TAX%</th>
+          <th>TOTAL AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if tinkering.length}}
+          {{#each tinkering}}
+            <tr>
+              <td style='text-align: center;'>{{this.sno}}</td>
+              <td style='text-align: left;'>{{this.description}}</td>
+              <td style='text-align: right;'>{{this.qty}}</td>
+              <td style='text-align: right;'>{{this.rate}}</td>
+              <td style='text-align: right;'>{{this.taxPercentage}}%</td>
+              <td style='text-align: right;'>{{this.amount}}</td>
+            </tr>
+          {{/each}}
+          <tr class="subtotal-row">
+            <td colspan="5" style='text-align: right; font-weight: bold;'>SUB TOTAL</td>
+            <td style='text-align: right; font-weight: bold;'>{{totals.tinkeringTotal}}</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan="6" style='text-align: center;'>No items</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+
+    <!-- CUT & WELDING Section -->
+    <h4 class="section-header">CUT & WELDING</h4>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th>SNO</th>
+          <th>DESCRIPTION</th>
+          <th>QTY</th>
+          <th>RATE</th>
+          <th>TAX%</th>
+          <th>TOTAL AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if cutWelding.length}}
+          {{#each cutWelding}}
+            <tr>
+              <td style='text-align: center;'>{{this.sno}}</td>
+              <td style='text-align: left;'>{{this.description}}</td>
+              <td style='text-align: right;'>{{this.qty}}</td>
+              <td style='text-align: right;'>{{this.rate}}</td>
+              <td style='text-align: right;'>{{this.taxPercentage}}%</td>
+              <td style='text-align: right;'>{{this.amount}}</td>
+            </tr>
+          {{/each}}
+          <tr class="subtotal-row">
+            <td colspan="5" style='text-align: right; font-weight: bold;'>SUB TOTAL</td>
+            <td style='text-align: right; font-weight: bold;'>{{totals.cutWeldingTotal}}</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan="6" style='text-align: center;'>No items</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+
+    <!-- PAINTING Section -->
+    <h4 class="section-header">PAINTING</h4>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th>SNO</th>
+          <th>DESCRIPTION</th>
+          <th>QTY</th>
+          <th>RATE</th>
+          <th>TAX%</th>
+          <th>TOTAL AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if painting.length}}
+          {{#each painting}}
+            <tr>
+              <td style='text-align: center;'>{{this.sno}}</td>
+              <td style='text-align: left;'>{{this.description}}</td>
+              <td style='text-align: right;'>{{this.qty}}</td>
+              <td style='text-align: right;'>{{this.rate}}</td>
+              <td style='text-align: right;'>{{this.taxPercentage}}%</td>
+              <td style='text-align: right;'>{{this.amount}}</td>
+            </tr>
+          {{/each}}
+          <tr class="subtotal-row">
+            <td colspan="5" style='text-align: right; font-weight: bold;'>SUB TOTAL</td>
+            <td style='text-align: right; font-weight: bold;'>{{totals.paintingTotal}}</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan="6" style='text-align: center;'>No items</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+
+    <!-- ITEMS Section -->
+    <h4 class="section-header">PARTS & ACCESSORIES</h4>
+    <table class='items-table'>
+      <thead>
+        <tr>
+          <th>SNO</th>
+          <th>DESCRIPTION</th>
+          <th>QTY</th>
+          <th>RATE</th>
+          <th>TAX%</th>
+          <th>TOTAL AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if items.length}}
+          {{#each items}}
+            <tr>
+              <td style='text-align: center;'>{{this.sno}}</td>
+              <td style='text-align: left;'>{{this.description}}</td>
+              <td style='text-align: right;'>{{this.qty}}</td>
+              <td style='text-align: right;'>{{this.rate}}</td>
+              <td style='text-align: right;'>{{this.taxPercentage}}%</td>
+              <td style='text-align: right;'>{{this.partTotal}}</td>
+            </tr>
+          {{/each}}
+          <tr class="subtotal-row">
+            <td colspan="5" style='text-align: right; font-weight: bold;'>SUB TOTAL</td>
+            <td style='text-align: right; font-weight: bold;'>{{totals.items.amount}}</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan="6" style='text-align: center;'>No items</td>
+          </tr>
+        {{/if}}
+        
+        <!-- GRAND TOTAL -->
+        <tr style="background-color: #e0e0e0; font-weight: bold;">
+          <td colspan="5" style='text-align: right; font-size: 14px;'>GRAND TOTAL</td>
+          <td style='text-align: right; font-size: 14px;'>{{totals.grandTotal}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class='footer'>
+      <p class='bold'>AMOUNT IN WORDS: {{amountInWords}}</p>
+      <table class='details-table-sign'>
+        <thead>
+          <tr>
+            <th></th>
+            <th style='text-align: left; padding-top:10px; width:20%'>For {{branch.name}}</th>
+          </tr>
+          <tr>
+            <th style='padding-left:0px; padding-top:10px;'>______________________</th>
+            <th style='text-align: left; padding-top:10px; width:20%'>______________________</th>
+          </tr>
+          <tr>
+            <th style='padding-left:0px; padding-top:10px;'>Customer Signature</th>
+            <th style='text-align: left; padding-top:10px; width:20%'>Authorized Signature</th>
+          </tr>
+        </thead>
+      </table>
+      <br>
+
+<p style="text-align: center;">
+    <b><u>TERMS & CONDITIONS</u></b>
+</p>
+
+<p>
+1. Estimate for jobs to be done is only approximate. Bill will be made out for actual, Work turned out, depending on the time involved.<br><br>
+</p>
+
+<p>
+2. Our quotation for parts to be supplied is based on the prices of materials current at the time of giving quotation. Any fluctuation of prices on the date of fitment will be billed to you.<br><br>
+
+</p>
+
+<p>
+3. Our  quotation  are  subject  to  availability  of  parts  and  we accept no  responsibility for any  delay caused due  to non availability of parts.<br><br>
+</p>
+
+<p>
+4. Handling charges, sales tax, surcharge and incidental charges etc, will be extra.<br><br>
+</p>
+
+<p>
+5. Unless  otherwise stated  our  terms  of  payment are cash on delivery of the  vehicle of  goods and  therefore our bill amount will have to be  paid for in  full at  the  time  of taking delivery of the vehicle of goods.<br>
+</p>
+
+<p>
+6. Customer has to pay 50% of estimated value as advance for Non Tie Up Insurance Policy Body Shop Jobs at the time of Job approval.<br><br>
+</p>
+
+<p>
+7. It should be distinctly understood that all our charges are net and are not subject to any rebate or discount.<br><br>
+</p>
+<p>
+8. It should be definitely agreed and understood that we assume no responsibility for loss or damages by theft or fire or whatever means to the vehicle/parts placed with us for storage, sale or repair.<br><br>
+
+</p>
+<p>
+9. Any Parts found at the time of dismantling will be submitted on supplementary & Fuel for testing/trial will be extra.<br><br>
+
+</p>
+<p>
+10. Garage rent will be  charged ( Rs.250 Per Day ) if the vehicles, spares are not  taken  delivery   Customer, for the entire period from  the  date  of  acknowledgement of  the   estimate or from a week after despatch of estimate whichever occurs earliest.<br><br>
+
+</p>
+<P>
+11. Also if the vehicle or spare is not taken delivery within a period of 3 days from the date of information to you after repairs, garage rent will be charged as per norms.<br><br>
+
+</P>
+<p>
+12. 5 % of estimation will be charged, if vehicle is taking back without job under any circumstances.<br><br>
+
+</p>
+<p>
+13. Estimate is valid for only for two weeks.<br><br>
+
+</p>
+<p>
+14. Taxes are applicable as per Govt norms, which has to paid during the time of delivery.<br><br>
+
+</p>
+
+    </div>
+  </body>
+</html>

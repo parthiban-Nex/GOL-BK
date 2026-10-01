@@ -1,0 +1,176 @@
+<html>
+  <head>
+    <title>Receipt</title>
+    <style>
+      body { font-family: 'Inter'; margin: 0; padding: 0; font-size: 12px; /*
+      Default font size */ } .header { text-align: right; padding: 0px 20px;
+      margin-bottom: -10px; } .header img { max-width: 150px; } .line {
+      border-bottom: 1px solid #000; margin: 10px 0; } .branch-details,
+      .customer-details, .booking-details { padding: 0 20px; } .center-text {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: darkred;
+        } .details-container { display: flex; justify-content: space-between;
+      margin: 20px 0; } .details-box { width: 48%; padding: 10px; } .details-box
+      p { margin: 0; padding: 3px 0; /* Reduced padding */ font-size: 12px; /*
+      Reduced font size for key-value pairs */ } .details-box .key {
+      font-weight: bold; } .details-table, .items-table , .details-table1 {
+      width: 100%; border-collapse: collapse; margin: 10px 0; }
+      .details-table-new, .items-table, .details-table-new1 { width: 100%;
+      border-collapse: collapse; margin: 10px 0; } .details-table-new th,
+      .details-table-new td, .items-table th, .items-table td { border: 1px
+      solid #ffffff; padding: 0px; /* Reduced padding */ text-align: left;
+      font-size: 10px; /* Reduced font size for table content */ }
+      .details-table-new1 th, .details-table-new1 td, .items-table th,
+      .items-table td { border: 1px solid #ffffff; padding: 0px; /* Reduced
+      padding */ text-align: left; font-size: 10px; /* Reduced font size for
+      table content */ vertical-align: top; } .details-table td, .items-table
+      th, .items-table td { border: 2px solid #000; padding: 5px; /* Reduced
+      padding */ text-align: left; font-size: 10px; /* Reduced font size for
+      table content */ } .details-table th, .details-table1 th { border: 2px
+      solid #000; padding: 5px; text-align: center; font-size: 10px; }
+      .details-table1 td { border: 2px solid #000; padding: 5px; /* Reduced
+      padding */ text-align: right; font-size: 10px; } .footer { padding: 10px
+      20px; font-size: 12px; /* Reduced font size for footer content */ }
+      .footer .signatures { display: flex; justify-content: space-between; }
+      .bold { font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div style='display: flex; justify-content:space-between'>
+      <div style='display:flex;'>
+        {{!-- <img
+          src='data:image/png;base64,{{kiBase64Logo}}'
+          alt='Logo'
+          style='height: 75px; width: 75px;'
+        /> --}}
+        <table class='details-table-new' style='margin-left: 10px;'>
+          <tbody>
+            <tr>
+              <td>{{branch.outletName}}</td>
+            </tr>
+            <tr>
+              <td>{{branch.address}},</td>
+            </tr>
+            <tr>
+              <td>{{branch.city}},{{branch.state}},{{branch.pincode}}</td>
+            </tr>
+            <tr>
+              <td>Mobile: {{branch.mobile}},</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class='header'>
+        <img
+          src='data:image/png;base64,{{base64Logo}}'
+          alt='Logo'
+          style='height: 30px; width:100px'
+        />
+      </div>
+    </div>
+    <div class='line'></div>
+    <table class='details-table-new1' style='width: 50%;'>
+      <tbody>
+        <tr>
+          <td style='width: 40%;'>PHONE</td>
+          <td style='width: 10%;'>:</td>
+          <td style='width: 50%;'>{{branch.phone}}</td>
+        </tr>
+        <tr>
+          <td style='width: 40%;'>EMAIL</td>
+          <td style='width: 10%;'>:</td>
+          <td style='width: 50%;'>{{branch.email}}</td>
+        </tr>
+        <tr>
+          <td style='width: 40%;'>GSTIN</td>
+          <td style='width: 10%;'>:</td>
+          <td style='width: 50%;'>{{branch.dealerGstin}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class='line'></div>
+    <div class='center-text'>RECEIPT</div>
+    <div class='line'></div>
+    <table class='details-table-new1'>
+      <tbody>
+        <tr>
+          <td style='width: 20%;'>BUSINESS UNIT</td>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{receipt.bisUnit}}</td>
+          <td style='width: 20%; text-align:right'>RECEIPT NUMBER</td>
+          <td style='width: 5%; text-align:right'>:</td>
+          <td style='width: 25%; text-align:left'>{{receipt.receiptNo}}</td>
+        </tr>
+        <tr>
+          <td style='width: 20%;'>CUSTOMER CODE</td>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{receipt.customerCode}}</td>
+          <td style='width: 20%; text-align:right'>CUSTOMER NAME</td>
+          <td style='width: 5%; text-align:right'>:</td>
+          <td style='width: 25%; text-align:left'>{{receipt.customerName}}</td>
+        </tr>
+        <tr>
+          <td style='width: 20%;'>RECEIVED FROM</td>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{receipt.recivedFrom}}</td>
+          <td style='width: 20%; text-align:right'>RECEIPT DATE</td>
+          <td style='width: 5%; text-align:right'>:</td>
+          <td style='width: 25%; text-align:left'>{{receipt.receiptDate}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th style='width: 20%;'>Mode of payment</th>
+          <th style='width: 20%;'>Invoice No./Ref Document</th>
+          <th style='width: 20%;'>*Cheque/Draft No /Transaction No/Card No</th>
+          <th style='width: 10%;'>Drawn on</th>
+          <th style='width: 10%;'>Bank Name</th>
+          <th style='width: 10%;'>Cheque/Draft Date</th>
+          <th style='width: 10%;'>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{receipt.mode}}</td>
+          <td>{{receipt.invoiceNo}}</td>
+          <td>{{receipt.cheque_draft_number}}</td>
+          <td>{{receipt.drawnOn}}</td>
+          <td>{{receipt.bankName}}</td>
+          <td>{{receipt.cheque_draft_date}}</td>
+          <td>{{receipt.amount}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class='bold'>AMOUNT IN WORDS:
+      {{receipt.amountInWords}}
+      RUPEES ONLY</div>
+    <table class='details-table-new1'>
+      <thead>
+        <tr>
+          <th colspan='2' style='text-align: right; padding-top:10px;'>For
+            {{branch.companyName}}</th>
+        </tr>
+        <tr>
+          <th
+            style='padding-left:0px; padding-top:10px;'
+          >______________________</th>
+          <th
+            style='text-align: right; padding-top:10px;'
+          >______________________</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>Customer Signature</th>
+          <th style='text-align: right; padding-top:10px;'>Authorized Signature</th>
+        </tr>
+      </thead>
+    </table>
+    <br />
+    <br />
+    <div class='bold'>Regd Office</div>
+  </body>
+</html>

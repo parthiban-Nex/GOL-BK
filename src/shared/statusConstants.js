@@ -1,0 +1,12 @@
+
+const statusConstants = {
+  SUCCESS: "SUCCESS",
+  AJC_FAILED: "AJC_FAILED",
+  JOB_NOT_FOUND: "JOB_NOT_FOUND",
+  MECH_FAILED: "MECH_FAILED",
+  GST_FAILED: "GST_FAILED",
+  FAILED: "FAILED",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+};
+
+export default statusConstants;

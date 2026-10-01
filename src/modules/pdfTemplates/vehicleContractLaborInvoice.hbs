@@ -1,0 +1,349 @@
+<html lang="en">
+
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>vehicleContractInvoice</title>
+  <style>
+    body {
+      font-family: 'Inter';
+      margin: 0;
+      padding: 0;
+      font-size: 12px;
+      /*
+      Default font size */
+    }
+
+    .header {
+      text-align: right;
+      padding: 10px 20px;
+      margin-bottom: -10px;
+    }
+
+    .header img {
+      max-width: 150px;
+    }
+
+    .line {
+      border-bottom: 1px solid #000;
+      margin: 10px 0;
+    }
+
+    .branch-details,
+    .customer-details,
+    .booking-details {
+      padding: 0 20px;
+    }
+
+    .center-text {
+      text-align: center;
+      font-size: 18px;
+      /* Reduced size for the centered
+      "ESTIMATE" text */
+      font-weight: bold;
+      margin: 20px 0;
+      color: darkred;
+    }
+
+    .details-container {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+    }
+
+    .details-box {
+      width: 48%;
+      padding: 10px;
+    }
+
+    .details-box p {
+      margin: 0;
+      padding: 3px 0;
+      /* Reduced padding */
+      font-size: 12px;
+      /*
+      Reduced font size for key-value pairs */
+    }
+
+    .details-box .key {
+      font-weight: bold;
+    }
+
+    .details-table,
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .details-table td,
+    .items-table td {
+      border: 2px solid #000;
+      padding: 5px;
+      /* Reduced padding
+      */
+      text-align: right;
+      font-size: 10px;
+      /* Reduced font size for table
+      content */
+    }
+
+    .details-table th,
+    .items-table th {
+      border: 2px solid #000;
+      padding: 5px;
+      /* Reduced padding */
+      text-align: center;
+      font-size: 10px;
+    }
+
+    .footer {
+      padding: 10px 20px;
+      font-size: 12px;
+      /* Reduced font size for
+      footer content */
+    }
+
+    .footer .signatures {
+      display: flex;
+      justify-content:
+        space-between;
+    }
+
+    .bold {
+      font-weight: bold;
+    }
+
+    .details-table-new,
+    .details-table-new1 {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+    }
+
+    .details-table-new th,
+    .details-table-new td {
+      border: 1px solid #ffffff;
+      padding: 0px;
+      /* Reduced padding */
+      text-align: left;
+      font-size:
+        10px;
+      /* Reduced font size for table content */
+    }
+
+    .details-table-sign th,
+    .details-table-sign td {
+      border: 1px solid #ffffff;
+      padding: 0px;
+      /*
+      Reduced padding */
+      text-align: left;
+      font-size: 12px;
+      /* Reduced font size
+      for table content */
+    }
+
+    .details-table-new1 th,
+    .details-table-new1 td {
+      border: 1px solid #ffffff;
+      padding: 0px;
+      /* Reduced padding */
+      text-align:
+        left;
+      font-size: 12px;
+      vertical-align: top;
+    }
+
+    .details-table-data {
+      width: 100%;
+      border-collapse:
+        collapse;
+      margin: 10px 0;
+    }
+
+    .details-table-data td {
+      border:
+        1px solid #000;
+      padding: 5px;
+      /* Reduced padding */
+      text-align: right;
+      font-size: 10px;
+    }
+
+    .details-table-data th {
+      border: 1px solid #000;
+      padding: 5px;
+      text-align: center;
+      font-size: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div style='display: flex; justify-content:space-between'>
+    <div style='display:flex;'>
+      <table class='details-table-new' style='margin-left: 10px;'>
+        <tbody>
+          <tr>
+            <td>{{branch.outletName}}</td>
+          </tr>
+          <tr>
+            <td>{{branch.address}},</td>
+          </tr>
+          <tr>
+            <td>{{branch.city}},{{branch.state}},{{branch.pincode}}</td>
+          </tr>
+          <tr>
+            <td>Mobile: {{branch.mobile}},</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class='header'>
+      <img src='data:image/png;base64,{{base64Logo}}' alt='Logo' style='height: 30px; width:100px' />
+    </div>
+  </div>
+
+  <div class='line'></div>
+  <div class='branch-details'>
+    <p><span class='key'>Email:</span> {{branch.email}}.</p>
+    <p><span class='key'>DEALER GSTIN:</span> {{branch.dealerGstin}}</p>
+  </div>
+  <div class='line'></div>
+  <div class='center-text'>INVOICE</div>
+  <div class='line'></div>
+
+  <table class='details-table-new1'>
+
+    <body>
+      <tr>
+        <th style='width: 20%;'>CUSTOMER CODE</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{customer.code}}</td>
+        <th style='width: 20%; '>DOCUMENT NAME</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{scheme.documentName}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>CUSTOMER NAME</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{customer.name}}</td>
+        <th style='width: 20%; '>DOCUMENT DATE</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{scheme.documentDate}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>CUSTOMER GSTIN</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{customer.gstin}}</td>
+        <th style='width: 20%; '>BRANCH</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{scheme.branch}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>ADDRESS</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{customer.address}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>VEHICLE NO</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{scheme.regNo}}</td>
+        <th style='width: 20%; '>ENROLLMENT DATE</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{scheme.startDate}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>MODEL/MAKE</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{scheme.makeModel}}</td>
+        <th style='width: 20%; '>EXPIRY DATE</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{scheme.endDate}}</td>
+      </tr>
+    </body>
+  </table>
+
+  <p>
+    Dear Customer,
+    <br />Thank you very much for enrolling your vehicle in AMC membership.
+    <br />We assure best services always!
+  </p>
+
+  <table class='details-table'>
+    <thead>
+      <tr>
+        <th>HSN</th>
+        <th>CGST%</th>
+        <th>CGST</th>
+        <th>SGST%</th>
+        <th>SGST</th>
+        <th>IGST%</th>
+        <th>IGST</th>
+        <th>Net Amount</th>
+        <th>GRAND TOTAL</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{scheme.hsn}}</td>
+        <td>{{scheme.cgst}}</td>
+        <td>{{scheme.cgstAmount}}</td>
+        <td>{{scheme.sgst}}</td>
+        <td>{{scheme.sgstAmount}}</td>
+        <td>{{scheme.igst}}</td>
+        <td>{{scheme.igstAmount}}</td>
+        <td>{{scheme.amount}}</td>
+        <td>{{scheme.amountWithTax}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class='details-table'>
+    <thead>
+      <tr>
+        <th style='text-align: center;'>SNO</th>
+        <th style='text-align: center;'>SCHEME LABORS/PARTS</th>
+        <th style='text-align: center;'>COUNT</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each schemeLaborParts}}
+      <tr>
+        <td style='text-align: center;'>{{this.sno}}</td>
+        <td style='text-align: center;'>{{this.laborPartCode}}</td>
+        <td style='text-align: center;'>{{this.count}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+
+  <div class='footer'>
+    <table class='details-table-sign'>
+      <thead>
+        <tr>
+          <th></th>
+          <th style='text-align: left; padding-top:10px; width:20%'>For
+            {{branch.name}}</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>______________________</th>
+          <th style='text-align: left; padding-top:10px; width:20%'>______________________</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>Customer Signature</th>
+          <th style='text-align: left; padding-top:10px; width:20%'>Authorized
+            Signature</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+
+  <p style="font-weight: bold;"><br/>Terms and Conditions</p>
+  <p>Enrollment fee is one time and Non refundable/ Non transferable</p>
+
+</body>
+
+</html>

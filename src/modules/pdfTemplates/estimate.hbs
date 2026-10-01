@@ -1,0 +1,330 @@
+<html>
+  <head>
+    <title>Estimate</title>
+    <style>
+      body { font-family: 'Inter'; margin: 0; padding: 0; font-size: 12px; /*
+      Default font size */ } .header { text-align: right; padding: 10px 20px;
+      margin-bottom: -10px; } .header img { max-width: 150px; } .line {
+      border-bottom: 1px solid #000; margin: 10px 0; } .branch-details,
+      .customer-details, .booking-details { padding: 0 20px; } .center-text {
+      text-align: center; font-size: 18px; /* Reduced size for the centered
+      "ESTIMATE" text */ font-weight: bold; margin: 20px 0; color: darkred; }
+      .details-container { display: flex; justify-content: space-between;
+      margin: 20px 0; } .details-box { width: 48%; padding: 10px; } .details-box
+      p { margin: 0; padding: 3px 0; /* Reduced padding */ font-size: 12px; /*
+      Reduced font size for key-value pairs */ } .details-box .key {
+      font-weight: bold; } .details-table, .items-table { width: 100%;
+      border-collapse: collapse; margin: 20px 0; } .details-table td,
+      .items-table td { border: 2px solid #000; padding: 5px; /* Reduced padding
+      */ text-align: right; font-size: 10px; /* Reduced font size for table
+      content */ } .details-table th, .items-table th { border: 2px solid #000;
+      padding: 5px; /* Reduced padding */ text-align: center; font-size: 10px; }
+      .footer { padding: 10px 20px; font-size: 12px; /* Reduced font size for
+      footer content */ } .footer .signatures { display: flex; justify-content:
+      space-between; } .bold { font-weight: bold; } .details-table-new,
+      .details-table-new1 { width: 100%; border-collapse: collapse; margin: 10px
+      0; } .details-table-new th, .details-table-new td { border: 1px solid
+      #ffffff; padding: 0px; /* Reduced padding */ text-align: left; font-size:
+      10px; /* Reduced font size for table content */ } .details-table-sign th,
+      .details-table-sign td { border: 1px solid #ffffff; padding: 0px; /*
+      Reduced padding */ text-align: left; font-size: 12px; /* Reduced font size
+      for table content */ } .details-table-new1 th, .details-table-new1 td {
+      border: 1px solid #ffffff; padding: 0px; /* Reduced padding */ text-align:
+      left; font-size: 12px; vertical-align: top; }
+    </style>
+  </head>
+  <body>
+    <div style='display: flex; justify-content:space-between'>
+      <div style='display:flex;'>
+        <table class='details-table-new' style='margin-left: 10px;'>
+          <tbody>
+            <tr>
+              <td>{{branch.outletName}}</td>
+            </tr>
+            <tr>
+              <td>{{branch.address}},</td>
+            </tr>
+            <tr>
+              <td>{{branch.city}},{{branch.state}},{{branch.pincode}}</td>
+            </tr>
+            <tr>
+              <td>Mobile: {{branch.mobile}},</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class='header'>
+        <img
+          src='data:image/png;base64,{{base64Logo}}'
+          alt='Logo'
+          style='height: 30px; width:100px'
+        />
+      </div>
+    </div>
+    <div class='line'></div>
+    <div class='branch-details'>
+      {{!--<p><span class="key"></span> {{branch.name}},</p>
+        <p><span class="key"></span> {{branch.address}},</p>
+        <p><span class="key">Phone:</span> {{branch.phone}},</p>
+        <p><span class="key">Mobile:</span> {{branch.mobile}},</p>--}}
+      <p><span class='key'>Email:</span> {{branch.email}}.</p>
+      <p><span class='key'>DEALER GSTIN:</span> {{branch.dealerGstin}}</p>
+    </div>
+    <div class='line'></div>
+    <div class='center-text'>ESTIMATE</div>
+    <div class='line'></div>
+    {{!--<div class="details-container">
+        <!-- Customer Details -->
+        <div class="details-box">
+            <p><span class="key">CUSTOMER:</span> {{customer.name}}</p>
+            <p><span class="key">CUSTOMER GSTIN:</span> {{customer.gstin}}</p>
+            <p><span class="key">ADDRESS:</span> {{customer.address}}</p>
+            <p><span class="key">Insurance Company Name:</span> {{customer.insuranceCompany}}</p>
+            <p><span class="key">Insurance Claim No:</span> {{customer.insuranceClaimNo}}</p>
+            <p><span class="key">Insurance Expiry Date:</span> {{customer.insuranceExpiryDate}}</p>
+            <p><span class="key">CHASSIS NO:</span> {{customer.chassisNo}}</p>
+            <p><span class="key">SERVICE TYPE:</span> {{customer.serviceType}}</p>
+        </div>
+        <!-- Booking Details -->
+        <div class="details-box">
+            <p><span class="key">DOCUMENT NAME:</span> {{booking.documentName}}</p>
+            <p><span class="key">DOCUMENT DATE:</span> {{booking.documentDate}}</p>
+            <p><span class="key">BRANCH:</span> {{booking.branch}}</p>
+            <p><span class="key">OUTLET NAME:</span> {{booking.outletName}}</p>
+            <p><span class="key">MAKE:</span> {{booking.make}}</p>
+            <p><span class="key">MODEL:</span> {{booking.model}}</p>
+            <p><span class="key">REG NO:</span> {{booking.regNo}}</p>
+            <p><span class="key">KM READING:</span> {{booking.kmReading}}</p>
+        </div>
+    </div>--}}
+
+    <table class='details-table-new1'>
+      <body>
+        <tr>
+          <th style='width: 20%;'>CUSTOMER</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.name}}</td>
+          <th style='width: 20%; '>DOCUMENT NAME</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.documentName}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>CUSTOMER GSTIN</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.gstin}}</td>
+          <th style='width: 20%; '>DOCUMENT DATE</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.documentDate}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>ADDRESS</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.address}}</td>
+          <th style='width: 20%; '>BRANCH</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.branch}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>INSURANCE COMPANY NAME</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.insuranceCompany}}</td>
+          <th style='width: 20%; '>OUTLET NAME</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.outletName}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>INSURANCE CLAIM NO</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.insuranceClaimNo}}</td>
+          <th style='width: 20%; '>MAKE</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.make}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>INSURANCE EXPIRY DATE</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.insuranceExpiryDate}}</td>
+          <th style='width: 20%; '>MODEL</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.model}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>CHASSIS NO</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.chassisNo}}</td>
+          <th style='width: 20%; '>REG NO</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.regNo}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>SERVICE TYPE</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.serviceType}}</td>
+          <th style='width: 20%; '>KM READING</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{booking.kmReading}}</td>
+        </tr>
+      </body>
+    </table>
+
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th>SNO</th>
+          <th>LABOURS</th>
+          <th>DESCRIPTION</th>
+          <th>SAC CODE</th>
+          <th>QTY</th>
+          <th>RATE</th>
+          <th>T DISC</th>
+          <th>IGST</th>
+          <th>CGST</th>
+          <th>SGST</th>
+          <th>AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each labours}}
+          <tr>
+            <td style='text-align: center;'>{{this.sno}}</td>
+            <td style='text-align: center;'>{{this.name}}</td>
+            <td style='text-align: center;'>{{this.description}}</td>
+            <td style='text-align: center;'>{{this.sacCode}}</td>
+            <td>{{this.qty}}</td>
+            <td>{{this.rate}}</td>
+            <td>{{this.discount}}</td>
+            <td>{{this.igst}}</td>
+            <td>{{this.cgst}}</td>
+            <td>{{this.sgst}}</td>
+            <td>{{this.amount}}</td>
+          </tr>
+        {{/each}}
+        <tr>
+          <td colspan='4' style='font-weight: bold; text-align: right;'>SUB
+            TOTAL</td>
+          <td>{{totals.labours.qty}}</td>
+          <td>{{totals.labours.rate}}</td>
+          <td>{{totals.labours.discount}}</td>
+          <td>{{totals.labours.igst}}</td>
+          <td>{{totals.labours.cgst}}</td>
+          <td>{{totals.labours.sgst}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td
+            colspan='10'
+            style='font-weight: bold; text-align: right;'
+          >Total</td>
+          <td>{{totals.labours.amount}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <table class='items-table'>
+      <thead>
+        <tr>
+          <th>SNO</th>
+          <th>PARTS</th>
+          <th>DESCRIPTION</th>
+          <th>HSN CODE</th>
+          <th>QTY</th>
+          <th>RATE</th>
+          <th>T DISC</th>
+          <th>IGST</th>
+          <th>CGST</th>
+          <th>SGST</th>
+          <th>AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if items.length}}
+          {{#each items}}
+            <tr>
+              <td style='text-align: center;'>{{this.sno}}</td>
+              <td style='text-align: center;'>{{this.name}}</td>
+              <td style='text-align: center;'>{{this.description}}</td>
+              <td style='text-align: center;'>{{this.hsnCode}}</td>
+              <td>{{this.qty}}</td>
+              <td>{{this.rate}}</td>
+              <td>{{this.discount}}</td>
+              <td>{{this.igst}}</td>
+              <td>{{this.cgst}}</td>
+              <td>{{this.sgst}}</td>
+              <td>{{this.amount}}</td>
+            </tr>
+          {{/each}}
+          <tr>
+            <td colspan='4' style='font-weight: bold; text-align: right;'>SUB
+              TOTAL</td>
+            <td>{{totals.items.qty}}</td>
+            <td>{{totals.items.rate}}</td>
+            <td>{{totals.items.discount}}</td>
+            <td>{{totals.items.igst}}</td>
+            <td>{{totals.items.cgst}}</td>
+            <td>{{totals.items.sgst}}</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td
+              colspan='10'
+              style='font-weight: bold; text-align: right;'
+            >Total</td>
+            <td>{{totals.items.amount}}</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan='11' style='text-align: center;'>No items</td>
+          </tr>
+          <tr>
+            <td colspan='4' style='font-weight: bold; text-align: right;'>SUB
+              TOTAL</td>
+            <td>{{totals.items.qty}}</td>
+            <td>{{totals.items.rate}}</td>
+            <td>{{totals.items.discount}}</td>
+            <td>{{totals.items.igst}}</td>
+            <td>{{totals.items.cgst}}</td>
+            <td>{{totals.items.sgst}}</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td
+              colspan='10'
+              style='font-weight: bold; text-align: right;'
+            >Total</td>
+            <td>{{totals.items.totalAmount}}</td>
+          </tr>
+        {{/if}}
+        <tr>
+          <td colspan='10' style='font-weight: bold; text-align: right;'>GRAND
+            TOTAL</td>
+          <td>{{totals.grandTotal}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class='footer'>
+      <p class='bold'>AMOUNT IN WORDS: {{amountInWords}}</p>
+      <p class='bold'>Customer Voice: {{customerVoice}}</p>
+      <table class='details-table-sign'>
+        <thead>
+          <tr>
+            <th></th>
+            <th style='text-align: left; padding-top:10px; width:20%'>For
+              {{branch.name}}</th>
+          </tr>
+          <tr>
+            <th
+              style='padding-left:0px; padding-top:10px;'
+            >______________________</th>
+            <th
+              style='text-align: left; padding-top:10px; width:20%'
+            >______________________</th>
+          </tr>
+          <tr>
+            <th style='padding-left:0px; padding-top:10px;'>Customer Signature</th>
+            <th style='text-align: left; padding-top:10px; width:20%'>Authorized
+              Signature</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </body>
+</html>

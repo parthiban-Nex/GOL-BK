@@ -1,0 +1,418 @@
+<html lang="en">
+
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>Returnable </title>
+  <style>
+    body {
+      font-family: 'Inter';
+      margin: 0;
+      padding: 0;
+      font-size: 12px;
+      /*
+      Default font size */
+    }
+
+    .header {
+      text-align: right;
+      padding: 10px 20px;
+      margin-bottom: -10px;
+    }
+
+    .header img {
+      max-width: 150px;
+    }
+
+    .line {
+      border-bottom: 1px solid #000;
+      margin: 10px 0;
+    }
+
+    .branch-details,
+    .customer-details,
+    .booking-details {
+      padding: 0 20px;
+    }
+
+    .center-text {
+      text-align: center;
+      font-size: 18px;
+      /* Reduced size for the centered
+      "ESTIMATE" text */
+      font-weight: bold;
+      margin: 20px 0;
+      color: darkred;
+    }
+
+    .details-container {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+    }
+
+    .details-box {
+      width: 48%;
+      padding: 10px;
+    }
+
+    .details-box p {
+      margin: 0;
+      padding: 3px 0;
+      /* Reduced padding */
+      font-size: 12px;
+      /*
+      Reduced font size for key-value pairs */
+    }
+
+    .details-box .key {
+      font-weight: bold;
+    }
+
+    .details-table,
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .details-table td,
+    .items-table td {
+      border: 2px solid #000;
+      padding: 5px;
+      /* Reduced padding
+      */
+      text-align: left;
+      font-size: 10px;
+      /* Reduced font size for table
+      content */
+    }
+
+    .details-table th,
+    .items-table th {
+      border: 2px solid #000;
+      padding: 5px;
+      /* Reduced padding */
+      text-align: center;
+      font-size: 10px;
+    }
+
+    .footer {
+      padding: 10px 20px;
+      font-size: 12px;
+      /* Reduced font size for
+      footer content */
+    }
+
+    .footer .signatures {
+      display: flex;
+      justify-content:
+        space-between;
+    }
+
+    .bold {
+      font-weight: bold;
+    }
+
+    .details-table-new,
+    .details-table-new1 {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+    }
+
+    .details-table-new th,
+    .details-table-new td {
+      border: 1px solid #ffffff;
+      padding: 0px;
+      /* Reduced padding */
+      text-align: left;
+      font-size:
+        10px;
+      /* Reduced font size for table content */
+    }
+
+    .details-table-sign th,
+    .details-table-sign td {
+      border: 1px solid #ffffff;
+      padding: 0px;
+      /*
+      Reduced padding */
+      text-align: left;
+      font-size: 12px;
+      /* Reduced font size
+      for table content */
+    }
+
+    .details-table-new1 th,
+    .details-table-new1 td {
+      border: 1px solid #ffffff;
+      padding: 0px;
+      /* Reduced padding */
+      text-align:
+        left;
+      font-size: 12px;
+      vertical-align: top;
+    }
+  </style>
+</head>
+
+<body>
+  <div style='display: flex; justify-content:space-between'>
+    <div style='display:flex;'>
+      <table class='details-table-new' style='margin-left: 10px;'>
+        <tbody>
+          <tr>
+            <td>{{outlet.outletName}}</td>
+          </tr>
+          <tr>
+            <td>{{outletData.address}}</td>
+          </tr>
+          <tr>
+            <td>{{outletData.city}},{{outletData.state}},{{outletData.pincode}}</td>
+          </tr>
+          <tr>
+            <td>Mobile: {{outletData.mobile}},</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class='header'>
+      <img src='data:image/png;base64,{{base64Logo}}' alt='Logo' style='height: 30px; width:100px' />
+    </div>
+  </div>
+
+  <div class='line'></div>
+
+  <div class='center-text'>Returnable/Non Returnable</div>
+  <div class='line'></div>
+
+  <table class='details-table-new1'>
+
+    <body>
+      <tr>
+        <th style='width: 20%;'>Return Type</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{returnable.return_type}}</td>
+        <th style='width: 20%; '>Registration No</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{returnable.reg_num}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Return Number</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{returnable.ret_number}}</td>
+        <th style='width: 20%; '>Make/Model</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{returnable.makeName}}/{{returnable.modelName}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Document Date</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{returnable.doc_date}}</td>
+        <th style='width: 20%; '>Customer Name</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{returnable.cus_name}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Supplier Name</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{returnable.vendorName}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Created By</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{outletData.createdBy}}</td>
+
+      </tr>
+ 
+    </body>
+  </table>
+
+
+  <table class='details-table'>
+    <thead>
+      <tr>
+        <th>SNO</th>
+        <th>PART NAME </th>
+        <th>QTY</th>
+
+   
+      </tr>
+    </thead>
+    <tbody>
+
+         {{#each partsValue}}
+      <tr>
+        <td>{{this.sno}}</td>
+        <td>{{this.partsDescription}}</td>
+        <td>{{this.quantity}}</td>
+      </tr>
+          {{/each}}
+    </tbody>
+  </table>
+
+  <br>
+  <br>
+
+
+  <table class='details-table'>
+    <thead>
+      <tr>
+        <th>REASON </th>
+        <th>REMARKS </th>
+  
+   
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{returnable.reasons}}</td>
+        <td>{{returnable.remarks}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <div class='footer'>
+    <table class='details-table-sign'>
+      <thead>
+        <tr>
+          <th></th>
+          <th style='text-align: left; padding-top:10px; width:20%'>For
+            {{branch.name}}</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>______________________</th>
+          <th style='text-align: left; padding-top:10px; width:20%'>______________________</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>Customer Signature</th>
+          <th style='text-align: left; padding-top:10px; width:20%'>Authorized
+            Signature</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+
+
+
+
+   <div class='line'></div>
+  <div class='center-text'>SECURITY - GATE PASS</div>
+  
+
+
+
+  <br>
+  <br>
+
+    <table class='details-table-new1'>
+
+    <body>
+      <tr>
+        <th style='width: 20%;'>Return Type</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{returnable.return_type}}</td>
+        <th style='width: 20%; '>Registration No</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{returnable.reg_num}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Return Number</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{returnable.ret_number}}</td>
+        <th style='width: 20%; '>Make/Model</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{returnable.makeName}}/{{returnable.modelName}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Document Date</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{returnable.doc_date}}</td>
+        <th style='width: 20%; '>Customer Name</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{returnable.cus_name}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Supplier Name</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{returnable.vendorName}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Created By</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{outletData.createdBy}}</td>
+
+      </tr>
+ 
+    </body>
+  </table>
+
+
+  <table class='details-table'>
+    <thead>
+      <tr>
+        <th>SNO</th>
+        <th>PART NAME </th>
+        <th>QTY</th>
+
+   
+      </tr>
+    </thead>
+    <tbody>
+
+         {{#each partsValue}}
+      <tr>
+        <td>{{this.sno}}</td>
+        <td>{{this.partsDescription}}</td>
+        <td>{{this.quantity}}</td>
+      </tr>
+          {{/each}}
+    </tbody>
+  </table>
+
+
+  <table class='details-table'>
+    <thead>
+      <tr>
+        <th>REASON </th>
+        <th>REMARKS </th>
+  
+   
+      </tr>
+    </thead>
+    <tbody>
+       <tr>
+        <td>{{returnable.reasons}}</td>
+        <td>{{returnable.remarks}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <div class='footer'>
+    <table class='details-table-sign'>
+      <thead>
+        <tr>
+          <th></th>
+          <th style='text-align: left; padding-top:10px; width:20%'>For
+            {{branch.name}}</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>______________________</th>
+          <th style='text-align: left; padding-top:10px; width:20%'>______________________</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>Security Signature</th>
+          <th style='text-align: left; padding-top:10px; width:20%'>Authorized
+            Signature</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+ 
+
+</body>
+
+</html>

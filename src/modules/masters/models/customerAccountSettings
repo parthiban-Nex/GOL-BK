@@ -1,0 +1,32 @@
+export default function CustomerAccountSettings(sequelize, DataTypes) {
+  const CustomerAccountSettings = sequelize.define(
+    'vrm_master_customer_account_settings',
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+
+      customer_account_id: {
+        type: DataTypes.STRING(45),
+        allowNull: false,
+      },
+
+      setting_type: {
+        type: DataTypes.STRING(128),
+        allowNull: false,
+      },
+       setting_value: {
+        type: DataTypes.STRING(128),
+        allowNull: false,
+      },
+    },
+    {
+      timestamps: false,
+    }
+  );
+
+  return CustomerAccountSettings;
+}

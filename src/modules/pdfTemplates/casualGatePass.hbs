@@ -1,0 +1,300 @@
+<html lang='en'>
+
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>CasualGatePass</title>
+  <style>
+    body {
+      font-family: 'Inter';
+      margin: 0;
+      padding: 0;
+      font-size: 12px;
+    }
+
+    .header {
+      text-align: right;
+      padding: 10px 20px;
+      margin-bottom: -10px;
+    }
+
+    .header img {
+      max-width: 150px;
+    }
+
+    .line {
+      border-bottom: 1px solid #000;
+      margin: 10px 0;
+    }
+
+    .outlet-details {
+      padding: 0 20px;
+    }
+
+    .outlet-details p {
+      margin: 0;
+      padding: 2px 0;
+      font-size: 12px;
+    }
+
+    .center-text {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 20px 0;
+      color: darkred;
+    }
+
+    .details-container {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      margin: 20px 0;
+    }
+
+    .details-box {
+      width: 48%;
+    }
+
+    .details-box p {
+      margin: 5px 0;
+      font-size: 12px;
+    }
+
+    .details-box .key {
+      font-weight: bold;
+    }
+
+    .table-container {
+      padding: 0 20px;
+      margin-top: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table,
+    th,
+    td {
+      border: 1px solid black;
+    }
+
+    th,
+    td {
+      padding: 8px;
+      text-align: left;
+      font-size: 12px;
+    }
+
+    .acknowledgment {
+      padding: 0 20px;
+      margin-top: 20px;
+      font-size: 12px;
+    }
+
+    .signature-container {
+      display: flex;
+      justify-content:
+        space-between;
+      padding: 0 20px;
+      margin-top: 40px;
+    }
+
+    .signature-box {
+      width: 25%;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .signature-box .line {
+      margin: 20px 0;
+      border-bottom: 1px solid black;
+    }
+     .signature-box1 {
+      width: 25%;
+      text-align: center;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+
+    .signature-box1 .line {
+      margin: 20px 0;
+      border-bottom: 1px solid black;
+    }
+
+    .details-table-new, .details-table-new1 {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+    }
+
+    .details-table-new th,
+    .details-table-new td {
+      border: 1px solid #ffffff;
+      padding: 0px;
+      /* Reduced padding */
+      text-align: left;
+      font-size: 10px;
+      /*
+      Reduced font size for table content */
+    }
+
+    .details-table-new1 th,
+    .details-table-new1 td {
+      border: 1px solid #ffffff;
+      padding: 0px;
+      /* Reduced padding */
+      text-align:
+        left;
+      font-size: 12px;
+      vertical-align: top;
+    }
+
+    .details-table-sign th,
+    .details-table-sign td {
+      border: 1px solid #ffffff;
+      padding: 0px;
+      /*
+      Reduced padding */
+      text-align: left;
+      font-size: 12px;
+      /* Reduced font size
+      for table content */
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header section with logo -->
+  <div style='display: flex; justify-content:space-between'>
+    <div style='display:flex;'>
+      <table class='details-table-new' style='margin-left: 10px;'>
+        <tbody>
+          <tr>
+                         <td>{{outlet.outletName}}</td>
+
+          </tr>
+          <tr>
+            <td>{{outlet.address}},</td>
+          </tr>
+          <tr>
+            <td>{{outlet.city}},{{outlet.state}},{{outlet.pincode}}</td>
+          </tr>
+          <tr>
+            <td>Mobile: {{outlet.mobile}},</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class='header'>
+      <img src='data:image/png;base64,{{base64Logo}}' alt='Logo' style='height: 30px; width:100px' />
+    </div>
+  </div>
+
+  <!-- Horizontal line -->
+  <div class='line'></div>
+
+  <!-- Outlet details -->
+  <div class='outlet-details'>
+    <p>
+      <strong>{{outlet.code}}</strong>,
+      <br>{{outlet.address}},
+      <br><span class="key">Phone:</span> {{outlet.phone}},
+      <br /><span class='key'>Email:</span>
+      {{outlet.email}},
+      <br /><span class='key'>GSTIN:</span>
+      {{outlet.gstin}}
+    </p>
+  </div>
+
+  <!-- Horizontal line -->
+  <div class='line'></div>
+
+  <div class='center-text'>Casual Gatepass</div>
+
+  <!-- Horizontal line -->
+  <div class='line'></div>
+
+  <!-- Customer and Document details -->
+  <table class='details-table-new1'>
+
+    <body>
+      <tr>
+        <th style='width: 20%;'>Customer Name</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{casualGatePass.customerName}}</td>
+        <th style='width: 20%; '>Document Name</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{casualGatePass.document_no}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Mobile Number</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{casualGatePass.customerMobileNumber}}</td>
+        <th style='width: 20%; '>Document Date</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{casualGatePass.date}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Reg No</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{casualGatePass.reg_no}}</td>
+        <th style='width: 20%; '>Branch</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{outlet.code}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Model</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{casualGatePass.modelName}}</td>
+        <th style='width: 20%; '></th>
+        <td style='width: 5%; '></td>
+        <td style='width: 25%; text-align:left'></td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Reason</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'>{{casualGatePass.reason}}</td>
+        <th style='width: 20%; '>Gate-In Time</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{casualGatePass.gateInTime}}</td>
+      </tr>
+      <tr>
+        <th style='width: 20%;'>Remarks</th>
+        <td style='width: 5%;'>:</td>
+        <td style='width: 25%;'> {{casualGatePass.remarks}}</td>
+        <th style='width: 20%; '>Gate-Out Time</th>
+        <td style='width: 5%; '>:</td>
+        <td style='width: 25%; text-align:left'>{{casualGatePass.createdAt}}</td>
+      </tr>
+    </body>
+  </table>
+
+  <div class='line'></div>
+
+  <!-- Signature Section -->
+  <div class='footer'>
+    <table class='details-table-sign'>
+      <thead>
+        <tr>
+          <th></th>
+          <th style='text-align: left; padding-top:10px; width:20%'>For
+            {{outlet.code}}</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>______________________</th>
+          <th style='text-align: left; padding-top:10px; width:20%'>______________________</th>
+        </tr>
+        <tr>
+          <th style='padding-left:0px; padding-top:10px;'>Customer Signature</th>
+          <th style='text-align: left; padding-top:10px; width:20%'>Authorized
+            Signature</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+</body>
+
+</html>

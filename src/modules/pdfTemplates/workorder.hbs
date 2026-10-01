@@ -1,0 +1,264 @@
+<html>
+  <head>
+    <title>Work Order</title>
+    <style>
+      body { font-family: 'Inter'; margin: 0; padding: 0; font-size: 12px; }
+      .header { text-align: right; padding: 10px 20px; } .header img {
+      max-width: 150px; } .line { border-bottom: 1px solid #000; margin: 10px 0;
+      } .outlet-details { text-align: left; padding: 10px 20px; }
+      .outlet-details p { margin: 0; padding: 2px 0; } .center-text {
+      text-align: center; font-size: 18px; font-weight: bold; margin: 20px 0;
+      color: darkred; } .details-container { display: flex; justify-content:
+      space-between; margin: 20px; } .details-box { width: 48%; } .details-box p
+      { margin: 0; padding: 3px 0; font-size: 12px; } .details-box .key {
+      font-weight: bold; } .details-box-right { margin-left: 20px; } .table-1 {
+      width: 100%; border-collapse: collapse; margin: 20px 0; }
+      .table-1,.table-1 th,.table-1 td { border: 1px solid black; } .table-1
+      th,.table-1 td { padding: 8px; text-align: center; } .table-1 th {
+      background-color: #f2f2f2; } .subtotal-row, .total-row, .total-tax-row,
+      .cash-discount-row, .round-off-row { font-weight: bold; } .total-row td,
+      .total-tax-row td, .cash-discount-row td, .round-off-row td{ text-align:
+      right; } .amount-summary { text-align: right; } .signature-section {
+      display: flex; justify-content: space-between; margin: 30px 20px; }
+      .signature-box { width: 25%; border-top: 1px solid #000; text-align:
+      center; padding: 20px 0; } .amount-words { margin: 20px 20px; font-weight:
+      bold; } .details-table-new, .details-table-new1 { width: 100%;
+      border-collapse: collapse; margin: 10px 0; } .details-table-new th,
+      .details-table-new td { border: 1px solid #ffffff; padding: 0px; /*
+      Reduced padding */ text-align: left; font-size: 10px; /* Reduced font size
+      for table content */ } .details-table-new1 th, .details-table-new1 td {
+      border: 1px solid #ffffff; padding: 0px; /* Reduced padding */ text-align:
+      left; font-size: 12px; vertical-align: top; }
+      .details-table, .items-table { width: 100%;
+      border-collapse: collapse; margin: 10px 0; }  .details-table td, .items-table th, .items-table td {
+      border: 2px solid #000; padding: 5px; /* Reduced padding */ text-align:
+      right; font-size: 10px; /* Reduced font size for table content */ }
+      .details-table th { border: 2px solid #000; padding: 5px; text-align:
+      center; font-size: 10px; }
+
+    </style>
+  </head>
+  <body>
+    <!-- Logo Section -->
+    <div style='display: flex; justify-content:space-between'>
+      <div style='display:flex;'>
+        <table class='details-table-new' style='margin-left: 10px;'>
+          <tbody>
+            <tr>
+                            <td>{{outlet.outletName}}</td>
+
+            </tr>
+            <tr>
+              <td>{{outlet.address}},</td>
+            </tr>
+            <tr>
+              <td>{{outlet.city}},{{outlet.state}},{{outlet.pincode}}</td>
+            </tr>
+            <tr>
+              <td>Mobile: {{outlet.mobile}},</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class='header'>
+        <img
+          src='data:image/png;base64,{{base64Logo}}'
+          alt='Logo'
+          style='height: 30px; width:100px'
+        />
+      </div>
+    </div>
+    <!-- Horizontal Line -->
+    <div class='line'></div>
+
+    <!-- Outlet Details (Now Left Aligned) -->
+    <div class='outlet-details'>
+      {{!--<p><span class="key">Outlet Code:</span> {{outlet.code}}</p>
+        <p><span class="key">Address:</span> {{outlet.address}}</p>
+        <p><span class="key">Phone:</span> {{outlet.phone}}</p>--}}
+      <p><span class='key'>Email:</span> {{outlet.email}}</p>
+      <p><span class='key'>GSTIN:</span> {{outlet.gstin}}</p>
+    </div>
+
+    <!-- Centered Title -->
+    <div class='center-text'>WORK ORDER BILL</div>
+
+    <!-- Details Section -->
+    {{!--<div class="details-container">
+        <!-- Left Side - Supplier and Customer Details -->
+        <div class="details-box">
+            <p><span class="key">SUPPLIER CODE:</span> {{supplier.code}}</p>
+            <p><span class="key">SUPPLIER NAME:</span> {{supplier.name}}</p>
+            <p><span class="key">SUPPLIER GSTIN:</span> {{supplier.gstin}}</p>
+            <p><span class="key">CUSTOMER CODE:</span> {{customer.code}}</p>
+            <p><span class="key">CUSTOMER NAME:</span> {{customer.name}}</p>
+            <p><span class="key">CUSTOMER GSTIN:</span> {{customer.gstin}}</p>
+        </div>
+
+        <!-- Right Side - Document and Vehicle Details -->
+        <div class="details-box details-box-right">
+            <p><span class="key">DOCUMENT NAME:</span> {{document.name}}</p>
+            <p><span class="key">DOCUMENT DATE:</span> {{document.date}}</p>
+            <p><span class="key">BRANCH:</span> {{document.branch}}</p>
+            <p><span class="key">MODEL:</span> {{vehicle.model}}</p>
+            <p><span class="key">REG NO:</span> {{vehicle.regNo}}</p>
+            <p><span class="key">ENGINE NO:</span> {{vehicle.engineNo}}</p>
+        </div>
+    </div>--}}
+
+    <table class='details-table-new1'>
+      <body>
+        <tr>
+          <th style='width: 20%;'>SUPPLIER CODE</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{supplier.code}}</td>
+          <th style='width: 20%; '>DOCUMENT NAME</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{document.name}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>SUPPLIER NAME</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{supplier.name}}</td>
+          <th style='width: 20%; '>DOCUMENT DATE</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{document.date}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>SUPPLIER GSTIN</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{supplier.gstin}}</td>
+          <th style='width: 20%; '>BRANCH</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{document.branch}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>CUSTOMER CODE</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.code}}</td>
+          <th style='width: 20%; '>MODEL</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{vehicle.model}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>CUSTOMER NAME</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.name}}</td>
+          <th style='width: 20%; '>REG NO</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{vehicle.regNo}}</td>
+        </tr>
+        <tr>
+          <th style='width: 20%;'>CUSTOMER GSTIN</th>
+          <td style='width: 5%;'>:</td>
+          <td style='width: 25%;'>{{customer.gstin}}</td>
+          <th style='width: 20%; '>ENGINE NO</th>
+          <td style='width: 5%; '>:</td>
+          <td style='width: 25%; text-align:left'>{{vehicle.engineNo}}</td>
+        </tr>
+      </body>
+    </table>
+
+    <!-- Horizontal Line 
+    <div class="line"></div> -->
+
+    <!-- Work Order Table -->
+    <table class='details-table'>
+      <thead>
+        <tr>
+          <th>SNO</th>
+          <th>Work Order</th>
+          <th>Account</th>
+          <th>Labor</th>
+          <th>QTY</th>
+          <th>TOTAL AMOUNT</th>
+          {{!-- <th>T DISC</th> --}}
+          <th>IGST %</th>
+          <th>IGST</th>
+          <th>CGST %</th>
+          <th>CGST</th>
+          <th>SGST %</th>
+          <th>SGST</th>
+          <th>AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+          <tr>
+            <td>{{sno}}</td>
+            <td>{{workOrder}}</td>
+            <td>{{account}}</td>
+            <td>{{labor}}</td>
+            <td>{{qty}}</td>
+            <td>{{rate}}</td>
+            {{!-- <td>{{tdisc}}</td>  --}}
+            <td>{{igstPercent}}</td>
+            <td>{{igst}}</td>
+            <td>{{cgstPercent}}</td>
+            <td>{{cgst}}</td>
+            <td>{{sgstPercent}}</td>
+            <td>{{sgst}}</td>
+            <td>{{amount}}</td>
+          </tr>
+        {{/each}}
+
+        <!-- Subtotal Row -->
+        <tr class='subtotal-row'>
+          <td colspan='3'>SUB TOTAL</td>
+          <td></td>
+          <td>{{subtotalQty}}</td>
+          <td></td>
+          {{!-- <td>{{subtotalTDisc}}</td> --}}
+          {{!-- <td></td> --}}
+          <td></td>
+          <td>{{subtotalIGST}}</td>
+          <td></td>
+          <td>{{subtotalCGST}}</td>
+          <td></td>
+          <td>{{subtotalSGST}}</td>
+          <td style='text-align: right;'></td>
+        </tr>
+
+        <!-- Total Tax Row -->
+        <tr class='total-tax-row'>
+          <td colspan='12' class='amount-summary'>TOTAL TAX</td>
+          <td>{{totalTax}}</td>
+        </tr>
+
+        <!-- Cash Discount Row -->
+        {{!-- <tr class='cash-discount-row'>
+          <td colspan='13' class='amount-summary'>CASH DISCOUNT</td>
+          <td>{{cashDiscount}}</td>
+        </tr> --}}
+
+        <!-- Round Off Row -->
+        <tr class='round-off-row'>
+          <td colspan='12' class='amount-summary'>ROUND OFF</td>
+          <td>{{roundOff}}</td>
+        </tr>
+
+        <!-- Total Row -->
+        <tr class='total-row'>
+          <td colspan='12' class='amount-summary'>TOTAL</td>
+          <td>{{totalAmount}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Amount in Words -->
+    <div class='amount-words'>
+      AMOUNT IN WORDS:
+      {{amountInWords}}
+    </div>
+
+    <!-- Signature Section -->
+    <div class='signature-section'>
+      <div class='signature-box'>
+        <p>CUSTOMER SIGNATURE</p>
+      </div>
+      <div class='signature-box'>
+        <p>AUTHORIZED SIGNATURE</p>
+      </div>
+    </div>
+  </body>
+</html>

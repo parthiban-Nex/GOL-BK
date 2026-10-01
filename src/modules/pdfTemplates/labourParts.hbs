@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>LabourParts</title>
+    <style>
+        body {
+            font-family: 'Inter';
+            margin: 0;
+            padding: 0;
+            font-size: 12px;
+            /* Default font size */
+        }
+
+        .header {
+            text-align: right;
+            padding: 0px 20px;
+            margin-bottom: -10px;
+        }
+
+        .header img {
+            max-width: 150px;
+        }
+
+        .line {
+            border-bottom: 1px solid #000;
+            margin: 10px 0;
+        }
+
+        .branch-details,
+        .customer-details,
+        .booking-details {
+            padding: 0 20px;
+        }
+
+        .center-text {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: darkred;
+        }
+
+        .details-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+
+        .details-box {
+            width: 48%;
+            padding: 10px;
+        }
+
+        .details-box p {
+            margin: 0;
+            padding: 3px 0;
+            /* Reduced padding */
+            font-size: 12px;
+            /* Reduced font size for key-value pairs */
+        }
+
+        .details-box .key {
+            font-weight: bold;
+        }
+
+        .details-table,
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        .details-table-new,
+        .items-table,
+        .details-table-new1 {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        .details-table-new th,
+        .details-table-new td,
+        .items-table th,
+        .items-table td {
+            border: 1px solid #ffffff;
+            padding: 0px;
+            /* Reduced padding */
+            text-align: left;
+            font-size: 10px;
+            /* Reduced font size for table content */
+        }
+
+        .details-table-new1 th,
+        .details-table-new1 td,
+        .items-table th,
+        .items-table td {
+            border: 1px solid #ffffff;
+            padding: 0px;
+            /* Reduced padding */
+            text-align: left;
+            font-size: 10px;
+            /* Reduced font size for table content */
+        }
+
+        .details-table td,
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            /* Reduced padding */
+            text-align: left;
+            font-size: 10px;
+            /* Reduced font size for table content */
+        }
+
+        .details-table th {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+            font-size: 10px;
+        }
+
+        .footer {
+            padding: 10px 20px;
+            font-size: 12px;
+            /* Reduced font size for footer content */
+        }
+
+        .footer .signatures {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+        {{#unless showHeaderAllPages}}
+    <div style="display: flex; justify-content:space-between">
+        <div style="display:flex">
+            <table class="details-table-new" style="margin-left: 10px;">
+                <tbody>
+                    <tr>
+                                      <td>{{outlet.outletName}}
+                            {{#if includeFranchise}}, Franchise of TVS Automobile Solutions Private Limited{{/if}}
+                                      </td>
+
+                    </tr>
+                    <tr>
+                        <td>{{outlet.address}},</td>
+                    </tr>
+                    <tr>
+                        <td>{{outlet.city}},{{outlet.state}},{{outlet.pincode}}</td>
+                    </tr>
+                    <tr>
+                        <td>Mobile: {{outlet.mobile}},</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="header">
+            <img src="data:image/png;base64,{{base64Logo}}" alt="Logo" style="height: 30px; width:100px">
+        </div>
+    </div>
+    <div class="line"></div>
+        {{/unless}}
+    <table class="details-table-new1" style="width: 100%;">
+        <tbody>
+  <tr>
+    <td style="width: 20%;">PAN</td>
+    <td style="width: 5%;">:</td>
+    <td style="width: 25%;"></td>
+    <td style="width: 20%; text-align:right">Job Card no</td>
+    <td style="width: 5%; text-align:right">:</td>
+    <td style="width: 25%; text-align:left">{{customer.documentName}}</td>
+  </tr>
+
+  <tr>
+    <td>GSTIN</td>
+    <td>:</td>
+    <td>{{outlet.dealerGstin}}</td>
+    <td style="text-align:right">Bill Date</td>
+    <td style="text-align:right">:</td>
+    <td style="text-align:left">{{customer.documentDate}}</td>
+  </tr>
+
+  <tr>
+    <td>CIN</td>
+    <td>:</td>
+    <td></td>
+    <td style="text-align:right">Bill Type</td>
+    <td style="text-align:right">:</td>
+    <td style="text-align:left">{{customer.InvoiceType}}</td>
+  </tr>
+
+  <tr>
+    <td>Invoice Number</td>
+    <td>:</td>
+    <td>{{customer.InvoiceNumber}}</td>
+    <td colspan="3"></td>
+  </tr>
+
+  <tr>
+    <td>IRN Number</td>
+    <td>:</td>
+    <td>{{bdoObj.irn_no}}</td>
+    <td colspan="3"></td>
+  </tr>
+
+  <tr>
+    <td>IRN Ack Date</td>
+    <td>:</td>
+    <td>{{bdoObj.irn_date}}</td>
+    <td colspan="3"></td>
+  </tr>
+
+  <!-- QR Code Row (BOTTOM, RIGHT ALIGNED) -->
+  {{#if bdoObj.qr_code}}
+  <tr>
+    <td colspan="6" style="text-align:right; padding-top:0px;">
+      <img
+        src="{{bdoObj.qr_code}}"
+        alt="QR Code"
+        style="width:100px; height:100px;"
+      />
+    </td>
+  </tr>
+  {{/if}}
+</tbody>
+
+    </table>
+    <table class="details-table" style="width: 100%;">
+        <thead>
+            <tr style="border: 1px solid #ffff;">
+                <th colspan="4" style="border: #ffffff; border-bottom:1px solid #000; text-align: center;"><u>Tax
+                        Invoice</u></th>
+            </tr>
+            <tr>
+                <th colspan="2" style="text-align: center;">BILLING TO</th>
+                <th colspan="2" style="text-align: center;">SHIP TO/Place of supply</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="width: 25%;">Insurance/Cust code</td>
+                <td style="width: 25%;">{{customer.customer_code}}</td>
+                <td style="width: 25%;">Customer Code</td>
+                <td style="width: 25%;">{{customer.customer_code}}</td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Insurance/Cust name</td>
+                <td style="width: 25%;">{{customer.name}}</td>
+                <td style="width: 25%;">Customer Name</td>
+                <td style="width: 25%;">{{customer.name}}</td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Insurer/Cust GSTIN</td>
+                <td style="width: 25%;">{{customer.gstin}}</td>
+                <td style="width: 25%;">Customer GSTIN</td>
+                <td style="width: 25%;">{{customer.gstin}}</td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Billing Address</td>
+                <td style="width: 25%;">{{customer.address}}</td>
+                <td style="width: 25%;">Delivery Address</td>
+                <td style="width: 25%;">{{customer.address}}
+                    <br />
+            {{customer.mobile}}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="details-table" style="width: 100%;">
+        <thead>
+            <tr>
+                <th style="text-align: center;" colspan="2">VEH/ENG DETAILS</th>
+                <th style="text-align: center;" colspan="2">JOBCARD DETAILS</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="width: 25%;">Vehicle</td>
+                <td style="width: 25%;">{{customer.model}}</td>
+                <td style="width: 25%;">Creation</td>
+                <td style="width: 25%;">{{customer.checkinTime}}</td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Registration No</td>
+                <td style="width: 25%;">{{customer.regNo}}</td>
+                <td style="width: 25%;">Repair Type</td>
+                <td style="width: 25%;">{{customer.repairType}}</td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Chassis No</td>
+                <td style="width: 25%;">{{customer.chassisNo}}</td>
+                <td style="width: 25%;">Service Type</td>
+                <td style="width: 25%;">{{customer.serviceType}}</td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Engine No</td>
+                <td style="width: 25%;">{{customer.engNo}}</td>
+                <td style="width: 25%;">Km Reading</td>
+                <td style="width: 25%;">{{customer.kmReading}}</td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Contact person</td>
+                <td style="width: 25%;"></td>
+                <td style="width: 25%;">Customer state code</td>
+                <td style="width: 25%;"></td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Service Engineer</td>
+                <td style="width: 25%;"></td>
+                <td style="width: 25%;">Is reverse charge apply</td>
+                <td style="width: 25%;"></td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="details-table" style="width: 100%;">
+        <thead>
+            <tr style="border: 1px solid #ffffff;">
+                <th colspan="16" style="border: #ffffff; border-bottom:1px solid #000; text-align:left">LABOURS</th>
+            </tr>
+            <tr>
+                <th style="width: 3%;">SNO</th>
+                <th>CODE</th>
+                <th>DESCRIPTION</th>
+                <th>HSN/SAC</th>
+                <th>QTY</th>
+                <th>TOTAL VALUE</th>
+                <th>DISC</th>
+                <th>Tax Val after DISC</th>
+                <th>CGST %</th>
+                <th>CGST</th>
+                <th>SGST %</th>
+                <th>SGST</th>
+                <th>IGST %</th>
+                <th>IGST</th>
+                <th style="width: 10%;">AMOUNT</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each labours}}
+            <tr>
+                <td>{{this.sno}}</td>
+                <td>{{this.rot_code}}</td>
+                <td>{{this.description}}</td>
+                <td>{{this.hsn}}</td>
+                <td>{{this.quantity}}</td>
+                <td>{{this.totalval}}</td>
+                <td>{{this.discount}}</td>
+                <td>{{this.valdisc}}</td>
+                <td>{{this.cgst}}</td>
+                <td>{{this.cgstamt}}</td>
+                <td>{{this.sgst}}</td>
+                <td>{{this.sgstamt}}</td>
+                <td>{{this.igst}}</td>
+                <td>{{this.igstamt}}</td>
+                <td>{{this.totalamt}}</td>
+            </tr>
+            {{/each}}
+            <tr>
+                <td colspan="4" style="text-align: right;">SUB TOTAL</td>
+                <td>{{totalLaborQuantity}}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>{{totalLaborCGst}}</td>
+                <td></td>
+                <td>{{totalLaborSGst}}</td>
+                <td></td>
+                <td>{{totalLaborIGst}}</td>
+                <td>{{totalLaborAmount}}</td>
+            </tr>
+            <tr>
+                <td colspan="14" style="text-align: right;">TOTAL GST on LABOURS</td>
+                <td>{{totalGstOnLabor}}</td>
+            </tr>
+            <tr>
+                <td colspan="14" style="text-align: right;">TOTAL Discount on LABOURS</td>
+                <td>{{totalLaborDiscount}}</td>
+            </tr>
+            <tr>
+                <td colspan="14" style="text-align: right;">Round off</td>
+                <td>{{labRound}}</td>
+            </tr>
+            <tr>
+                <td colspan="14" style="text-align: right;">Grand Total of LABOURS</td>
+                <td>{{labAmtRound}}</td>
+            </tr>
+        </tbody>
+    </table>
+    <table class='details-table' style="width: 100%;">
+        <thead>
+            <tr style="border: 1px solid #ffffff;">
+                <th colspan="16" style="border: #ffffff; border-bottom:1px solid #000; text-align:left">SPARES</th>
+            </tr>
+            <tr>
+                <th style='width: 3%;'>SNO</th>
+                <th>CODE</th>
+                <th>DESCRIPTION</th>
+                <th>HSN/SAC</th>
+                <th>QTY</th>
+                <th>PER QTY RATE</th>
+                {{! <th>Taxable value</th>
+                <th>DISC</th>
+                <th>Tax Val after DISC</th> }}
+                <th>CGST %</th>
+                <th>CGST</th>
+                <th>SGST %</th>
+                <th>SGST</th>
+                <th>IGST %</th>
+                <th>IGST</th>
+                <th style='width: 10%;'>AMOUNT</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each parts}}
+            <tr>
+                <td>{{this.sno}}</td>
+                <td>{{this.code}}</td>
+                <td>{{this.description}}</td>
+                <td>{{this.hsn}}</td>
+                <td>{{this.quantity}}</td>
+                <td>{{this.rate}}</td>
+                {{!-- <td>{{this.totalval}}</td>
+                <td>{{this.discount}}</td>
+                <td>{{this.valafterdisc}}</td> --}}
+                <td>{{this.cgst}}</td>
+                <td>{{this.cgstamt}}</td>
+                <td>{{this.sgst}}</td>
+                <td>{{this.sgstamt}}</td>
+                <td>{{this.igst}}</td>
+                <td>{{this.igstamt}}</td>
+                <td>{{this.totalamt}}</td>
+            </tr>
+            {{/each}}
+            <tr>
+                <th colspan='4' style='text-align: right;'>SUB TOTAL</th>
+                <td>{{totalPartsQuantity}}</td>
+                <td></td>
+                <td></td>
+                <td>{{totalPartsCGst}}</td>
+                <td></td>
+                <td>{{totalPartsSGst}}</td>
+                <td></td>
+                <td>{{totalPartsIGst}}</td>
+                <td>{{totalPartsAmount}}</td>
+                {{! <td></td>
+                <td></td>
+                <td></td> }}
+            </tr>
+            <tr>
+                <th colspan='12' style='text-align: right;'>TOTAL GST on SPARES</th>
+                <td>{{totalGstOnParts}}</td>
+            </tr>
+            {{! <tr>
+                <th colspan="12" style="text-align: right;">TOTAL DISCOUNT on SPARES</th>
+                <th></th>
+            </tr> }}
+            <tr>
+                <th colspan='12' style='text-align: right;'>TOTAL of SPARES</th>
+                <td>{{totalPartsAmount}}</td>
+            </tr>
+            <tr>
+                <th colspan='12' style='text-align: right;'>Round off</th>
+                <td>{{partRound}}</td>
+            </tr>
+            <tr>
+                <th colspan='12' style='text-align: right;'>Grand Total of SPARES</th>
+                <td>{{partAmtRound}}</td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="details-table" style="width: 100%;">
+        <thead></thead>
+        <tr>
+            <th style="width: 20%;">Total Labour Amount</th>
+            <th style="width: 20%;">Total Parts Amount</th>
+            <th style="width: 20%;">Total Labour &amp; Parts Amount</th>
+            <th style="width: 20%;">Payable Total Amount</th>
+        </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{labAmtRound}}</td>
+                <td>{{partAmtRound}}</td>
+                <td>{{totalLaborPartsAmount}}</td>
+                <td>{{totalLaborPartsAmountRnd}}</td>
+            </tr>
+        </tbody>
+    </table>
+    <p><b>AMOUNT IN WORDS: {{totalLaborPartsAmountWords}} RUPEES ONLY</b></P>
+    <p>
+        E &amp; O.E
+        <br />I hereby accept to pay the above mentioned amount by Cash / DD before taking delivery of the vehicle.
+        Certified that goods covered by this bill suffered taxes at our hand/already. Pl turnover for the condition of
+        sale. Goods once sold will not taken back.
+    </p>
+    <p><b>OUTLET BANK DETAILS</b></p>
+    <table class="details-table" style="width: 100%;">
+        <thead>
+            <tr>
+                <th colspan="3" style="text-align: left; border: #ffffff; border-bottom:1px solid #000;">Payment to be
+                    released in favour of : {{outlet.name}}</th>
+            </tr>
+            <tr>
+                <th>BANK NAME</th>
+                <th>ACCOUNT NUMBER</th>
+                <th>IFSC CODE</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="details-table" style="width: 100%;">
+        <thead>
+            <tr>
+                <th style="width: 50%; text-align: center;">ADVICE</th>
+                <th style="width: 50%; text-align: center;">SERVICE ENGINEER REMARKS</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="width: 50%;">{{customer.customerVoice}}</td>
+                <td style="width: 50%;">{{customer.serviceEngineerRemarks}}</td>
+            </tr>
+        </tbody>
+    </table>
+    <p><b>Next service Coupon code: </b></p>
+    <p><b>Valid Till: </b></p>
+    {{!-- <p style="text-align: center;">Ki Mobility Solutions Private Limited</p>
+    <p style="text-align: center;"><u>TERMS &amp; CONDITIONS</u></p>
+    <p style="text-align: center;"><u>Conditions Of Sale</u></p>
+    <p>
+        1. Our risk and responsibility ceases on delivery of the goods from our
+        Premises or to carriers. Customers are kindly requested to examine the
+        goods before taking delivery.
+    </p>
+    <p>
+        <span>
+            2. All Sales tax local or Central &#40;wherever applicable&#41; which
+            may be levied or become leviable under any legislation now in force or
+            enacted hereafter shall be payable by the purchaser in addition to the
+            price quoted / charged by us.
+        </span>
+    </p>
+    <p>
+        3. In addition, handling charges at appropriate rates are not included in
+        the price quoted / charged will also be payable.
+    </p>
+    <p>
+        4. The company is not liable for delays or no delivery due to contingencies
+        arising from War,Strikes, Labour or Political Agitation, Lockouts , Fire, Flood,
+        Drought, Delays on rail or at sea, Breakdown or other causes beyond the control
+        of the sellers, whether in course of transit or delivery. The sale is without
+        responsibility on the part of the sellers for any loss rising therefrom.
+    </p>
+    <p>
+        5. Interest at 18% Per annum will be charged on overdue accounts and this will
+        accrue from the date of the bill.
+    </p>
+    <p style="text-align: center;"><u>Additional condition in respect of Sale of Parts</u></p>
+    <p>
+        1. Terms, Prices, Discounts and Special Quotation are not subject to repetition,
+        Returned goods will not be accepted.
+    </p>
+    <p>
+        2. We undertake no responsibility for breakage, shortage or leakage in transit
+        in spite of our paying Careful attention to the despatch.
+    </p>
+    <p style="text-align: center;"><u>Additional condition in respect of Service</u></p>
+    <p>
+        1. Terms, Prices, Discounts and Special Quotation are not subject to repetition.
+    </p>
+    <p>
+        2. The Company reserves the right to with hold delivery and detain the vehicle
+        spares entrusted to It for repairs by the Customer till its entire repair bills
+        including repair charges. Value of parts and Accessories and garage rent at
+        appropriate rates are paid by the customer before effecting Delivery of the
+        repaired vehicles/spares him/her.
+    </p>
+    <p>
+        3. The company &#40;Seller/Reseller&#41; is entitled to being to sale any
+        vehicles/spares entrusted to it for repairs by customers by public auction or
+        private contract or otherwise in case its entire repair Bill including repair
+        charges and value of parts and accessories supplied, are not fully paid by the
+        customer within a period of 3 months from the date the company advise the customer
+        that the Repaired vehicle / spare is ready for delivery, and further reserves
+        its right to process against the customer for any shortfall ascertained to be
+        due to the company after adjusting the sale Proceeds less sale expenses.
+    </p>
+    <p>
+        4. GST is applicable @ appropriate rate for works contract as GST provisions
+        in the respective states
+    </p> --}}
+    <br />
+    <table class="details-table-new">
+        <thead>
+            <tr>
+                <th style="padding-left:0px">______________________</th>
+                <th style="text-align: right;">______________________</th>
+            </tr>
+            <tr>
+                <th style="padding-left:0px">Customer Signature</th>
+                <th style="text-align: right;">Authorized Signature</th>
+            </tr>
+        </thead>
+    </table>  
+        {{#if showTerms}}
+
+<br>
+
+<p style="text-align: center;">
+    <b><u>TERMS & CONDITIONS</u></b>
+</p>
+
+<p>
+1. This workshop is owned and operated by
+<b>{{outlet.outletName}}</b> ("Workshop").The Workshop is open for 7 days a week, except for day/s that are pre-disclosed as weekly off or special holiday, by this Workshop.
+</p>
+
+<p>
+2. The Workshop is an authorised franchisee of TVS Automobile Solutions PVT. LTD. (“KMS”). You (“Customer”/ “you”) hereby agree and authorize the Workshop and KMS and all of its divisions, affiliates, subsidiaries, related parties and other group companies (collectively the “KMS Entities”; Workshop and KMS Entities are collectively called “we”/ “us” / “our”) to access your basic data / contact details provided herewith, i.e. your name, address, telephone number, e-mail address, birth date and / or anniversary date. You hereby consent to, agree and acknowledge that we may call/ email/ SMS/Whatsapp/Telegram you on any of the basic contact details shared by you, in order to assist you with the services availed by you or keep you informed regarding our service or product details, or send you any marketing and our other product or service related communication and our other offers. You confirm that you are providing the details herein at your sole discretion and confirm that you have full capacity and authority to provide the abovementioned details and these details are true and accurate. You promise that neither the Workshop nor any KMS Entity shall be held responsible or liable for any claim arising out of accessing or using your basic data / contact details shared by you. You also consent to being assigned a unique identity within the KMS Group, to be shared amongst all KMS Entities, for the purpose outlined in this paragraph. You also agree and understand that the Workshop, KMS Entities or their agency appointed for this purpose will retain the data provided hereunder for as long as reasonably required for the purposes mentioned above, or until you withdraw consent, after which they will delete all your data from their records and will forget you completely. You also agree that if at any point of time, you wish to stop receiving such communications from KMS Group, you will call at KMS’s designated call center* and register your preference.<br> *Call Centre Number: 1800224008 or email us at:- customercare@tvs.in<br><br>
+
+</p>
+
+<p>
+3. This Workshop shall take reasonable care of your vehicle while it is at the Workshop. However, this Workshop shall not be responsible for any loss or damage caused to the vehicle in case such loss is caused due to reason of fire, theft, accident or any other cause beyond the control of the Workshop.<br><br>
+</p>
+
+<p>
+4. The Customer is advised to collect his/her personal articles before handing over the vehicle to the Workshop. We shall not be responsible for any missing item, which has not been registered in the job card.<br><br>
+</p>
+
+<p>
+5. For a vehicle in an accident, if towing services are availed from the Workshop, the Customer will be liable to pay the cost for such towing, at actuals.<br>
+</p>
+
+<p>
+                    6. Workshop will release the vehicle only upon receiving complete payment from the Customer or upon receipt of delivery order from the insurance company.
+                    However, principal liability to pay will always be of the Customer, under all circumstances.
+</p>
+
+<p>
+                    7. This Workshop may conduct test drive on the vehicle for purpose of inspecting the damages and testing the repairs done and/ or also drive the vehicle for delivery to the Customer, at Customer’s risk. In case of damage due to any accident, repairs will be carried out under the insurance of the vehicle.<br><br>
+</p>
+<p>
+                        8. While best efforts will be made by the Workshop to identify full extent of damages suffered by the vehicle brought to the Workshop for repair and accordingly repairs and replacement of damaged parts will be carried out. However, the Customer understands and acknowledges the fact that the repaired vehicle may not be restored to its original condition or cannot be made like new vehicles. Few parts or systems of the vehicle may fail after some time of usage because of certain unidentifiable or unforeseen effect of damage occurred due to any accident or natural calamity, if any, show up after some time. Such failures shall not be treated as deficiency in quality of repair / service done by the Workshop.<br><br>
+
+</p>
+<p>
+                        9. THE CUSTOMER SHALL INSPECT THE VEHICLE TO ITS SATISFACTION BEFORE TAKING IT BACK FORM THE WORKSHOP. NEITHER THE WORKSHOP NOR TASPL MAKES ANY WARRANTY WITH RESPECT TO THE SERVICES, WHETHER EXPRESS OR IMPLIED, AND SPECIFICALLY DISCLAIMS ANY IMPLIED WARRANTIES, WHETHER OF MERCHANTABILITY, SUITABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR OTHERWISE FOR ITS SERVICES.
+
+</p>
+<p>
+                        10. Customer is requested to collect the old spare part (in case of replacement) after the job is completed. In case the old spare part is not collected by the Customer at the time of delivery of the vehicle, the Workshop has the right to dispose it off, in the manner it deems fit, and shall not be held responsible thereafter.<br><br>
+
+</p>
+<P>
+                        11. In case the delivery of the vehicle has not been taken within 3 days from the day the service is completed, Rs. 100 per day per vehicle as parking charges would be levied. The charges will have to be paid by the Customer along with the bill at the time of taking delivery of the vehicle.  The Workshop reserves the
+                    right to recover all expenses and take all steps, including disposal of the vehicle in the manner it deems fit, or initiate legal actions, if the Customer fails to
+                    take delivery of the vehicle within 7 days of notice or information of completion of the service, whichever is earlier.<br><br>
+
+</P>
+<p>
+                        12. If required by the Workshop, Customer undertakes to make deposit of 50% of the estimated amount of repair charges in advance in case of major repairs (as determined by the Workshop), whether under insurance claims or otherwise.<br><br>
+
+</p>
+<p>
+                        13. Every effort is made to adhere to the commitments made by this Workshop to the Customer. However, the estimated date/time of delivery could change depending upon the availability of spare parts (if need be), additional jobs requested and delays caused due to unforeseen circumstances.<br><br>
+
+</p>
+<p>
+                        14. Vehicle can be delivered only on production of customer copy of the Repair Order Form. However, the Workshop may deliver the vehicle to the Customer or any representative of the Customer, whose signature appears on the Repair Order form or who is authorised by the Customer.<br><br>
+
+</p>
+<p>
+                        15. Workshop will levy an estimation charge of Rs. 500/- or 10% of the total labour charges, whichever is higher if the job is not entrusted to the Workshop after obtaining the estimate from Workshop. The amount will have to be paid along with the parking charges if any, prior to delivery of the vehicle on his/her behalf.<br><br>
+
+</p>
+<p>
+                        16. Further, an interest of 24% p.a will be levied on the invoice value in case the Customer or owner of vehicle does not pay on the outstanding within 2 days from the date of the invoice.<br><br>
+
+</p>
+<p>
+                        17. Amounts referred under these “Terms and Conditions” are exclusive of taxes.<br><br>
+
+</p>
+<p>
+                        18. The Customer shall be bound by these Terms and Conditions including their respective successors and lawful assigns. These Terms and Conditions shall be governed by and construed in accordance with the laws of India and any dispute arising out of this engagement or these terms shall be subject to the exclusive jurisdiction of the Indian courts.<br><br>
+
+</p>
+{{/if}}  
+</body>
+
+</html>
