@@ -358,7 +358,7 @@ const getGrnDetailsWithGrandTotal = async (reqData, user) => {
         'invoice_number',
         'invoice_date',
         'vendor_code',
-        // 'createdAt',
+        'createdAt',
         [
           db.Sequelize.literal(`(
                   SELECT ROUND(SUM(grnparts.total),2)
