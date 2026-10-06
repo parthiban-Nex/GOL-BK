@@ -123,7 +123,6 @@ const exportAnalytics = async (req, res, next) => {
     const label = from && to ? `${from}_to_${to}` : (period || 'Analytics');
     const filename = `Attendance_Analytics_${label}.xlsx`;
 
-    // Generate Excel (.xlsx) file via ExcelJS
     const workbook = new ExcelJS.Workbook();
     workbook.creator = req.user?.employeeName || req.user?.name || 'MyTVS DMS';
     workbook.created = new Date();
@@ -132,7 +131,6 @@ const exportAnalytics = async (req, res, next) => {
       views: [{ showGridLines: true }],
     });
 
-    // Title banner
     worksheet.mergeCells('A1:H1');
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'ATTENDANCE ANALYTICS REPORT';
@@ -140,12 +138,12 @@ const exportAnalytics = async (req, res, next) => {
     titleCell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF1E3A8A' }, // Deep Navy
+      fgColor: { argb: 'FF1E3A8A' }, 
     };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     worksheet.getRow(1).height = 32;
 
-    // Subtitle / metadata
+    
     worksheet.mergeCells('A2:H2');
     const periodCell = worksheet.getCell('A2');
     periodCell.value = `Period: ${from && to ? `${from} to ${to}` : period}   |   Total Employees: ${summary.totalEmployees ?? '—'}   |   Overall Attendance: ${summary.avgAttendance ?? 0}%   |   Generated: ${new Date().toLocaleDateString('en-IN')}`;
@@ -160,7 +158,6 @@ const exportAnalytics = async (req, res, next) => {
 
     worksheet.getRow(3).height = 10;
 
-    // Summary Metric Cards Block (Row 4 & 5)
     worksheet.mergeCells('A4:B4');
     worksheet.getCell('A4').value = 'Total Employees';
     worksheet.mergeCells('A5:B5');
@@ -208,7 +205,6 @@ const exportAnalytics = async (req, res, next) => {
 
     worksheet.getRow(6).height = 12;
 
-    // Table Column Widths
     worksheet.columns = [
       { key: 'week', width: 22 },
       { key: 'present', width: 14 },
@@ -307,7 +303,6 @@ const exportAnalytics = async (req, res, next) => {
       });
     });
 
-    // Summary Total Row
     const overallRate = sumTotal > 0 ? Math.round(((sumPresent + sumDutyRest + sumOnDuty) / sumTotal) * 100) : 0;
     const summaryRow = worksheet.addRow([
       'TOTAL / OVERALL',
@@ -381,7 +376,6 @@ const exportDetails = async (req, res, next) => {
       views: [{ showGridLines: true }],
     });
 
-    // 1. Title banner
     worksheet.mergeCells('A1:J1');
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'EMPLOYEE ATTENDANCE DETAILS REPORT';
@@ -394,7 +388,6 @@ const exportDetails = async (req, res, next) => {
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     worksheet.getRow(1).height = 32;
 
-    // 2. Subtitle / metadata
     worksheet.mergeCells('A2:J2');
     const periodCell = worksheet.getCell('A2');
     periodCell.value = `Date Range: ${range.from} to ${range.to}   |   Total Employees: ${data.length}   |   Outlet: ${result?.outletId || req.user?.outletId || 'All'}   |   Generated: ${new Date().toLocaleDateString('en-IN')}`;
@@ -409,7 +402,6 @@ const exportDetails = async (req, res, next) => {
 
     worksheet.getRow(3).height = 10;
 
-    // 3. Summary Metric Cards Block (Row 4 & 5)
     const totals = data.reduce(
       (acc, r) => ({
         present: acc.present + (r.present || 0),
@@ -471,7 +463,6 @@ const exportDetails = async (req, res, next) => {
 
     worksheet.getRow(6).height = 12;
 
-    // 4. Columns & Headers
     worksheet.columns = [
       { key: 'empId', width: 16 },
       { key: 'name', width: 26 },
@@ -517,7 +508,6 @@ const exportDetails = async (req, res, next) => {
       };
     });
 
-    // 5. Data Rows
     data.forEach((r, idx) => {
       const row = worksheet.addRow([
         r.id || r.employeeId || '',
@@ -555,7 +545,6 @@ const exportDetails = async (req, res, next) => {
       });
     });
 
-    // 6. Summary Total Row
     const summaryRow = worksheet.addRow([
       'TOTAL / AVERAGE',
       `Total Employees: ${data.length}`,

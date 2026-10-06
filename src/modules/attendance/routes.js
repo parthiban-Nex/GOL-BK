@@ -81,5 +81,4 @@ router.get('/analytics/export', JwtMiddleware.checkToken, controller.exportAnaly
 router.get('/details/export', JwtMiddleware.checkToken, controller.exportDetails);
 router.get('/details', JwtMiddleware.checkToken, controller.getDetailsTable);
 
-const attendanceRouter = router;
-export default attendanceRouter;
+export default router;

@@ -114,8 +114,6 @@ const createRegularisation = async (payload, user = {}) => {
         throw err;
     }
 
-    // Security authorization check:
-    // Determine: Who is req.user? Which employees can this user manage? Is employeeId allowed?
     const { isRestricted, map, outletId: managerOutletId } = await getAuthorizedEmployeeMap(user);
     const empIdKey = String(employeeId).trim().toLowerCase();
     const empFromDb = map.get(empIdKey);
@@ -130,7 +128,6 @@ const createRegularisation = async (payload, user = {}) => {
         throw err;
     }
 
-    // Authoritatively derive fields from DB / logged-in user instead of blindly trusting client payload
     let employeeName = empFromDb?.employeeName || payload.employeeName;
     if (!employeeName && Employee) {
         try {
@@ -176,7 +173,6 @@ const createRegularisation = async (payload, user = {}) => {
         throw err;
     }
 
-    // 1. Create Regularisation record keeping status as 'Approved' directly
     const created = await Regularisation.create({
         employeeId: String(employeeId),
         employeeName,
@@ -191,7 +187,6 @@ const createRegularisation = async (payload, user = {}) => {
         createdBy: user.id || null,
     });
 
-    // 2. Immediately update/upsert Attendance record for that employee and date
     const targetStatus = payload.targetStatus || payload.mark || 'P';
     const managerName = user.employeeName || user.name || '';
     const odDrNotes = (targetStatus === 'OD' || targetStatus === 'DR') ? ((payload.notes || payload.remarks || regReason || '').trim() || null) : null;
@@ -227,7 +222,6 @@ const getTodayMarkList = async (params = {}, user = {}) => {
     const today = params.date || new Date().toISOString().split('T')[0];
     const shiftFilter = params.shift;
 
-    // Extract outletId from user or query
     const outletId =
         params.outletId ||
         user?.outlet?.id ||
@@ -236,7 +230,6 @@ const getTodayMarkList = async (params = {}, user = {}) => {
 
     const managerName = user?.employeeName || user?.name || '';
 
-    // 1. Fetch live employees from Employee model for this outlet
     let employeeList = [];
     if (Employee) {
         try {
@@ -268,7 +261,6 @@ const getTodayMarkList = async (params = {}, user = {}) => {
         }
     }
 
-    // 2. Fetch marks for this date and outlet/employees
     const empIds = employeeList.map((e) => e.id);
     const attendanceWhere = { date: today };
     if (outletId) {
@@ -289,11 +281,9 @@ const getTodayMarkList = async (params = {}, user = {}) => {
         markMap.set(r.employeeId, r);
     });
 
-    const ALLOWED_MARKS = ['P', 'A', 'L', 'DR', 'OD'];
 
     const results = employeeList.map((emp) => {
         const existing = markMap.get(emp.id) || markMap.get(emp.employeeId);
-        const hasStatus = !!(existing && existing.status);
         return {
             id: emp.id,
             employeeId: emp.employeeId,
@@ -331,12 +321,8 @@ const saveMarksBulk = async (payload, user = {}) => {
         return { count: 0, date, outletId: managerOutletId };
     }
 
-    // Security authorization check:
-    // Determine: Who is req.user? Which employees can this user manage? Is employeeId allowed?
-    const { isRestricted, map, outletId: userOutletId } = await getAuthorizedEmployeeMap(user);
+       const { isRestricted, map, outletId: userOutletId } = await getAuthorizedEmployeeMap(user);
 
-    // Check which employees already have attendance marked for today
-    // Mark attendance is one-time only; once marked, the row is frozen and changes must go through regularisation
     const candidateEmpIds = records
         .map((r) => String(r.id || r.employeeId))
         .filter(Boolean);
@@ -360,12 +346,10 @@ const saveMarksBulk = async (payload, user = {}) => {
         if (!item.id && !item.employeeId) continue;
         const empId = item.id || item.employeeId;
         const mark = item.mark !== undefined ? item.mark : (item.status !== undefined ? item.status : '');
-        // Only save if a valid mark was provided
         if (!mark) continue;
 
         const empIdKey = String(empId).trim().toLowerCase();
 
-        // If already marked today, row is frozen and cannot be overwritten via mark attendance
         if (alreadyMarkedSet.has(empIdKey)) {
             logger.info(`Skipping already marked employee ${empId} for date ${date}. Changes must go through regularisation.`);
             continue;
@@ -373,7 +357,6 @@ const saveMarksBulk = async (payload, user = {}) => {
 
         const empFromDb = map.get(empIdKey);
 
-        // If manager is restricted to an outlet and employee is not in their managed list:
         if (isRestricted && !empFromDb && map.size > 0) {
             logger.warn(`Security Warning: User ${user.id} (${user.employeeName}) attempted unauthorized attendance mark for employee: ${empId}`);
             const err = new Error(`Unauthorized: You are not authorized to mark attendance for employee '${empId}'`);
