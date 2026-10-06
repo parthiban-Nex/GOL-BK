@@ -44,6 +44,7 @@ const upload = multer({ storage: multer.memoryStorage() }); // Store file in mem
  router.post('/CreatePOGrn',JwtMiddleware.checkToken,upload.single("file"),xsssanitize, controller.CreatePOGrn);
  router.post('/GetOldBinLocations',JwtMiddleware.checkToken,controller.GetOldBinLocations)
  router.post('/UpdateOldBinLocations',JwtMiddleware.checkToken,controller.UpdateOldBinLocations)
+ router.post('/updateGrn',JwtMiddleware.checkToken, controller.updateGrn);
 
 
 const partsRouter = router;

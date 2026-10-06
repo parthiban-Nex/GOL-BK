@@ -1,4 +1,7 @@
+node_modules
 
+.env.uat
+.env.production
 # Google/Firebase service account credentials
 fit_fcm_service_account.json
 open-source-prod-3cfc5e95e6dd.json

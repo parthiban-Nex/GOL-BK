@@ -237,15 +237,17 @@ const validateGrnUploads = async (req, user, files) => {
   let result = '';
   let exceptionData = [];
   let successData = 0;
-  let actualHeaders = {};
+  let actualHeaders = [];
   const requiredHeaders = [
-    'SL No', 'Branch', 'GRN No', 'GRN Date',"Supplier Name","Supplier Invoice Date",'Item Code', 'Item Name',
-    'UOM', 'Location', 'Qty', 'Unit Cost', 'MRP', 'Unit Sale Rate',"Discount",
+    'SL No', 'Branch',
+    // 'GRN No',
+    'GRN Date', 'Supplier Name', 'Supplier Invoice Date', 'Item Code', 'Item Name',
+    'UOM', 'Location', 'Qty', 'Unit Cost', 'MRP', 'Unit Sale Rate', 'Discount',
     // 'CGST', 'SGST', 'IGST',
-     'Value', 
-    //  'Parts Category', 'Make', 'Model',
-    // 'Parts Aggregate', 
-    'HSN', 'DMS ID'
+    'Value',
+    // 'Parts Category', 'Make', 'Model',
+    // 'Parts Aggregate',
+    // 'HSN'
   ];
 
   try {
@@ -257,7 +259,7 @@ const validateGrnUploads = async (req, user, files) => {
       const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
 
       // Validate Headers
-       actualHeaders = Object.keys(sheetData[0] || {});
+      actualHeaders = Object.keys(sheetData[0] || {});
       const missingHeaders = requiredHeaders.filter(header => !actualHeaders.includes(header));
 
       if (missingHeaders.length > 0) {
@@ -265,95 +267,70 @@ const validateGrnUploads = async (req, user, files) => {
           result: 'failed',
           exceptionData: [],
           successData: 0,
+          actualHeaders,
           message: `Missing required columns: ${missingHeaders.join(', ')}`
         };
       }
 
-      //  Check for duplicate DMS ID
-      const dmsIdSet = new Set();
-      const uniqueSheetData = sheetData.filter((element, index) => {
-        const docId = element['DMS ID'];
-
-        if (typeof docId === 'number' || typeof docId === 'string') {
-          const normalized = String(docId).trim();
-          if (dmsIdSet.has(normalized)) {
-            element['Message'] = `Row ${index + 2}: Duplicate DMS ID`;
-            exceptionData.push(element);
-            return false;
-          } else {
-            dmsIdSet.add(normalized);
-            return true;
-          }
-        }
-
-        return false;
-      });
-
-      if (exceptionData.length > 0) {
-        return { result: 'failed', exceptionData, successData };
-      }
       const isEmpty = val => val === undefined || val === null || val === '' || val === 'null' || val === 'undefined';
 
       const requiredFields = [
         'Branch', 'Item Code', 'Item Name', 'Qty', 'Unit Cost', 'MRP', 'Unit Sale Rate',
-        'Value', 'DMS ID'
+        'Value'
       ];
-const normalize = val =>
-  String(val)
-    .trim()
-    .toUpperCase();
-    const itemCodes = [...new Set(
-  uniqueSheetData
-    .filter(row => !isEmpty(row["Item Code"]))
-    .map(i => normalize(i["Item Code"]))
-)];
-             const chunkSize = 1000;
-let items = [];
 
-for (let i = 0; i < itemCodes.length; i += chunkSize) {
-  const chunk = itemCodes.slice(i, i + chunkSize);
+      const normalize = val => String(val).trim().toUpperCase();
 
-  const chunkItems = await Item.findAll({
-    where: { itemCode: { [Op.in]: chunk } },
-    attributes: ['id', 'itemCode']
-  });
+      const itemCodes = [...new Set(
+        sheetData
+          .filter(row => !isEmpty(row['Item Code']))
+          .map(i => normalize(i['Item Code']))
+      )];
 
-  items.push(...chunkItems);
+      const chunkSize = 1000;
+      let items = [];
 
-}
+      for (let i = 0; i < itemCodes.length; i += chunkSize) {
+        const chunk = itemCodes.slice(i, i + chunkSize);
 
-const itemCodeSet = new Set(
-  items.map(item => normalize(item.itemCode))
-);
-       let notfoundItems = itemCodes.filter(code => !itemCodeSet.has(code));
-      if (notfoundItems.length > 0) {
-           const itemCodeToRows = new Map();
+        const chunkItems = await Item.findAll({
+          where: { itemCode: { [Op.in]: chunk } },
+          attributes: ['id', 'itemCode']
+        });
 
-uniqueSheetData.forEach(row => {
-  const code = normalize(row["Item Code"]);
-  if (!itemCodeToRows.has(code)) {
-    itemCodeToRows.set(code, []);
-  }
-  itemCodeToRows.get(code).push(row);
-});
-notfoundItems.forEach(code => {
-  const rows = itemCodeToRows.get(code) || [];
-  rows.forEach(row => {
-    row['item error'] = `Item not found for Item Code: ${code}`;
-    exceptionData.push(row);
-  });
-});
+        items.push(...chunkItems);
       }
 
-             
-      //  row-wise validations
-      for (let index = 0; index < uniqueSheetData.length; index++) {
-        const element = uniqueSheetData[index];
+      const itemCodeSet = new Set(items.map(item => normalize(item.itemCode)));
+
+      const notfoundItems = itemCodes.filter(code => !itemCodeSet.has(code));
+      if (notfoundItems.length > 0) {
+        const itemCodeToRows = new Map();
+
+        sheetData.forEach(row => {
+          if (isEmpty(row['Item Code'])) return;
+          const code = normalize(row['Item Code']);
+          if (!itemCodeToRows.has(code)) {
+            itemCodeToRows.set(code, []);
+          }
+          itemCodeToRows.get(code).push(row);
+        });
+
+        notfoundItems.forEach(code => {
+          const rows = itemCodeToRows.get(code) || [];
+          rows.forEach(row => {
+            row['item error'] = `Item not found for Item Code: ${code}`;
+            exceptionData.push(row);
+          });
+        });
+      }
+
+      // row-wise validations
+      for (let index = 0; index < sheetData.length; index++) {
+        const element = sheetData[index];
         try {
           let hasError = false;
           let errorMessage = '';
-          
-           
 
           for (const field of requiredFields) {
             if (isEmpty(element[field])) {
@@ -367,10 +344,6 @@ notfoundItems.forEach(code => {
             exceptionData.push(element);
             continue;
           }
-
-
-
-
         } catch (innerError) {
           element['Message'] = `Error processing row ${index + 2}: ${innerError.message}`;
           exceptionData.push(element);
@@ -388,7 +361,7 @@ notfoundItems.forEach(code => {
     logger.error('Error in validateGrnUploads:', err);
   }
 
-  return { result, exceptionData, successData,actualHeaders };
+  return { result, exceptionData, successData, actualHeaders };
 };
 
 const validatePoUploads = async (req, user, files) => {

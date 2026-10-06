@@ -338,56 +338,66 @@ const GetGrnDocuments = async (req) => {
 
 const getGrnDetailsWithGrandTotal = async (reqData, user) => {
   try {
-    // Fetch GRN details with grand total from related GrnParts
-    const { searchKey, offset, limit } = reqData;
-    const searchCondition = searchKey ? {
-      [Op.or]: [
+    const { searchKey, vendorCode, fromDate, toDate } = reqData;
+    const limit = Number(reqData.limit) || 25;
+    const offset = Number(reqData.offset) || 0;
+
+    const where = { outlet_id: user.outlet.id };
+
+    // Search box
+    if (searchKey) {
+      where[Op.or] = [
         { grn_no: { [Op.like]: `%${searchKey}%` } },
         { invoice_number: { [Op.like]: `%${searchKey}%` } },
-      ]
-    } : {};
-    const userCondition = { outlet_id: user.outlet.id };
+      ];
+    }
 
+    // Vendor filter ("ALL" or empty = no filter)
+    if (vendorCode && vendorCode !== "ALL") {
+      where.vendor_code = vendorCode;
+    }
+
+    // Date range on createdAt (inclusive of the whole toDate day)
+    if (fromDate && toDate) {
+      where.createdAt = {
+        [Op.between]: [`${fromDate} 00:00:00`, `${toDate} 23:59:59`],
+      };
+    } else if (fromDate) {
+      where.createdAt = { [Op.gte]: `${fromDate} 00:00:00` };
+    } else if (toDate) {
+      where.createdAt = { [Op.lte]: `${toDate} 23:59:59` };
+    }
 
     const grnDetails = await Grn.findAll({
-      where: { ...searchCondition, ...userCondition },
-
+      where,
       attributes: [
-        'id',
-        'grn_no',
-        'invoice_number',
-        'invoice_date',
-        'vendor_code',
-        // 'createdAt',
+        "id",
+        "grn_no",
+        "invoice_number",
+        "invoice_date",
+        "vendor_code",
+        "createdAt",
         [
           db.Sequelize.literal(`(
-                  SELECT ROUND(SUM(grnparts.total),2)
-                  FROM grnparts
-                  WHERE grnparts.grn_id = grn.id
-                )`),
-          'grand_total', // Calculate grand total using a subquery
+            SELECT ROUND(SUM(grnparts.total), 2)
+            FROM grnparts
+            WHERE grnparts.grn_id = grn.id
+          )`),
+          "grand_total",
         ],
-
-
       ],
-      include: [
-        {
-          model: GrnParts,
-          attributes: [],  // No need to fetch individual part details, just summing total
-          as: "grnparts"
-        }
-      ],
-      group: ['grn.id'],
-      order: [[db.Sequelize.col('createdAt'), 'DESC']], // Correct order clause
+      order: [["createdAt", "DESC"]],
       limit,
       offset,
-
-      // Group by the GRN to calculate sum correctly for each GRN
     });
-    let count = await Grn.count({ where: { outlet_id: user.outlet.id } })
+
+    // Same filters as the list, so pagination matches
+    const count = await Grn.count({ where });
+
     return { grnDetails, count };
   } catch (err) {
-    logger.error(' Grn fetching error', err);
+    logger.error("Grn fetching error", err);
+    throw err; // let the controller return a proper error response
   }
 };
 

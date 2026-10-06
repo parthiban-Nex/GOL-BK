@@ -353,7 +353,7 @@ const GetGrns = async (req, res, next) => {
     let { grnDetails: data, count } = await GrnService.getGrnDetailsWithGrandTotal(req.body, req.user);
     console.log(data, "data")
     const responsedata = data.map((item) => {
-      const date = new Date(item.dataValues.invoice_date).toISOString()
+      const date = new Date(item.dataValues.createdAt).toISOString()
       const dateformat = date.slice(8, 10) + "-" + date.slice(5, 7) + "-" + date.slice(0, 4)
       return ({
         ...item.dataValues, invoice_date: dateformat
@@ -3923,7 +3923,7 @@ const CreatePOGrn = async (req, res, next) => {
                         keyFilename: 'prj-stag-gobumpr-service-6567.json',
                       });
               
-                      const bucketName = 'bkt-dearo-prod'; // The name of your Cloud Storage bucket
+                      const bucketName = 'bkt-gobumper-stag-01'; // The name of your Cloud Storage bucket
                       const bucket = storage.bucket(bucketName);
               
                       const image = req.file; // The file you want to upload
@@ -4060,13 +4060,137 @@ console.log(poPartsData,poData,"po data")
       next(err);
     }
   }
+  const listVendorAndItemForPOReport = async (req, res, next) => {
+  let data = {};
+  try {
+    data = await GrnService.listVendorAndItemForPOReport(req.body,req.user);
+
+    return res.status(200).json({
+      requestSuccessful: true,
+      message: 'Vendor and Item List Fetched Successfully',
+      data
+    });
+  } catch (err) {
+    logger.error('Grn Contrller List Vendor ANd Item Error:', err);
+    next(err);
+  }
+};
+
+
+
+const dashboardAggregate = async (req, res,next) => { 
+    try {
+      const [data, oldData] = await Promise.all([
+      // GrnService.dashboardPurchaseFromMytvs(body, user),
+
+      GrnService.dashboardAggregate(
+        req.body,
+        req.user
+      ),
+    ]);
+        if (data) {
+            res.status(200).send({
+                requestSuccessful: true,
+                data
+            });
+        } else {
+            res.status(400).send({
+                requestSuccessful: false,
+                 data,
+            });
+        }
+    } catch (err) {
+        logger.error("JobCard controller dashboard", err);
+        next(err);
+    }
+};
+
+const dashboardSubAggregate = async (req, res,next) => { 
+    try {
+      const [data, oldData] = await Promise.all([
+      // GrnService.dashboardPurchaseFromMytvs(body, user),
+
+      GrnService.dashboardSubAggregate(
+        req.body,
+        req.user
+      ),
+    ]);
+        if (data) {
+            res.status(200).send({
+                requestSuccessful: true,
+                data
+            });
+        } else {
+            res.status(400).send({
+                requestSuccessful: false,
+                 data,
+            });
+        }
+    } catch (err) {
+        logger.error("JobCard controller dashboard", err);
+        next(err);
+    }
+};
+
+const updateGrn = async (req, res, next) => {
+  const body = req.body;
+  // console.log(body, "body")
+  let GRN_Parts_data = {};
+  let GRN_Stocks_data;
+  let Bindata={}
+   
+  try {
+    GRN_Parts_data = await GrnService.CreateGrnParts(body.grnparts, {dataValues:{id:body.grn_id}},body.type,req.user);
+   
+    
+      GRN_Stocks_data = await GrnService.CreateGrnStocksForDirectGrn(
+      {dataValues:{id:body.grn_id}},
+      GRN_Parts_data,
+      req.user,
+      body.bindata
+    );
+      
+    
+  
+    return res.status(200).json({
+      requestSuccessful: true,
+      message: 'Grn Created Successfully',
+      // data: {
+      //   GRNData: GRN_data,
+      //   GRNPartsData: GRN_Parts_data,
+      //   GRNStocksData: GRN_Stocks_data,
+      //   GateIn_data,
+      //   StockTransferData: stock_transfer_data,
+      //   stockadjustmentdata,
+      //   stockadjustmentpartdata,
+      //   Bindata
+      // },
+    });
+  } catch (error) {
+    //      logger.error('Grn Contrller Error:', err);
+    //  next(err);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      const field = error.errors[0].path; // Field that caused the unique constraint violation
+      const value = error.errors[0].value; // Value that violated the constraint
+      res.status(400).json({
+        message: `The ${field} '${value}' is already taken. Please use a different one.`,
+        requestSuccessful: false,
+      });
+    } else {
+      res.status(500).json({
+        requestSuccessful: false,
+        message: error.message,
+      });
+    }
+  }
+};
 const controller = {
   CreateGrn, CreateGrnDocument, GetGrnDocuments, GetGrns, GenerateGrnPdf, GetGrnDataForReturn,
   CreatePurchaseReturn, GetPurchaseReturn,GetAPReport, GetQuickItemSearch, getPartsForCounterSale,GetSpareSalesAxapta, GetPurchaseReport, GetPurchaseAxaptaReport,
   GetStockTransferInwardReport,GetPurchaseReturnReport,GetReceiptReport, GetSalesReport,GetStockAdjustmentSearch,CreateNegStockAdjustment,
   GetStockAdjustment,GetStockPositionReport,GetStockAdjustmentReport,CreateOracleStockTransferGrn,GetAutoFocusGrn,GetItemFinder,
   GetPurchaseDetails,GetSaleDetails,GetStockTransferParts,GetInventoryStockForGMS,dashboardPurchaseFromMytvs,GetZohoBillReport,GetKitaraApReport,GetZohoApReport,
-  CreatePOGrn,GetOldBinLocations,UpdateOldBinLocations
+  CreatePOGrn,GetOldBinLocations,UpdateOldBinLocations,listVendorAndItemForPOReport,dashboardAggregate,dashboardSubAggregate,updateGrn
 }
 
 export default controller;
