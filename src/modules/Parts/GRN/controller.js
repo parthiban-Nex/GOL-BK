@@ -4131,13 +4131,66 @@ const dashboardSubAggregate = async (req, res,next) => {
         next(err);
     }
 };
+
+const updateGrn = async (req, res, next) => {
+  const body = req.body;
+  // console.log(body, "body")
+  let GRN_Parts_data = {};
+  let GRN_Stocks_data;
+  let Bindata={}
+   
+  try {
+    GRN_Parts_data = await GrnService.CreateGrnParts(body.grnparts, {dataValues:{id:body.grn_id}},body.type,req.user);
+   
+    
+      GRN_Stocks_data = await GrnService.CreateGrnStocksForDirectGrn(
+      {dataValues:{id:body.grn_id}},
+      GRN_Parts_data,
+      req.user,
+      body.bindata
+    );
+      
+    
+  
+    return res.status(200).json({
+      requestSuccessful: true,
+      message: 'Grn Created Successfully',
+      // data: {
+      //   GRNData: GRN_data,
+      //   GRNPartsData: GRN_Parts_data,
+      //   GRNStocksData: GRN_Stocks_data,
+      //   GateIn_data,
+      //   StockTransferData: stock_transfer_data,
+      //   stockadjustmentdata,
+      //   stockadjustmentpartdata,
+      //   Bindata
+      // },
+    });
+  } catch (error) {
+    //      logger.error('Grn Contrller Error:', err);
+    //  next(err);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      const field = error.errors[0].path; // Field that caused the unique constraint violation
+      const value = error.errors[0].value; // Value that violated the constraint
+      res.status(400).json({
+        message: `The ${field} '${value}' is already taken. Please use a different one.`,
+        requestSuccessful: false,
+      });
+    } else {
+      res.status(500).json({
+        requestSuccessful: false,
+        message: error.message,
+      });
+    }
+  }
+};
 const controller = {
   CreateGrn, CreateGrnDocument, GetGrnDocuments, GetGrns, GenerateGrnPdf, GetGrnDataForReturn,
   CreatePurchaseReturn, GetPurchaseReturn,GetAPReport, GetQuickItemSearch, getPartsForCounterSale,GetSpareSalesAxapta, GetPurchaseReport, GetPurchaseAxaptaReport,
   GetStockTransferInwardReport,GetPurchaseReturnReport,GetReceiptReport, GetSalesReport,GetStockAdjustmentSearch,CreateNegStockAdjustment,
   GetStockAdjustment,GetStockPositionReport,GetStockAdjustmentReport,CreateOracleStockTransferGrn,GetAutoFocusGrn,GetItemFinder,
   GetPurchaseDetails,GetSaleDetails,GetStockTransferParts,GetInventoryStockForGMS,dashboardPurchaseFromMytvs,GetZohoBillReport,GetKitaraApReport,GetZohoApReport,
-  CreatePOGrn,GetOldBinLocations,UpdateOldBinLocations,listVendorAndItemForPOReport,dashboardAggregate,dashboardSubAggregate
+  CreatePOGrn,GetOldBinLocations,UpdateOldBinLocations,listVendorAndItemForPOReport,dashboardAggregate,dashboardSubAggregate,updateGrn
 }
 
 export default controller;
