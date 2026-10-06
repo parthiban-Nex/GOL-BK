@@ -152,9 +152,29 @@ const createRegularisation = async (payload, user = {}) => {
     }
 
     const outletId = empFromDb?.outletId || managerOutletId || getUserOutletId(user) || payload.outletId || null;
-    const regDate = payload.date || new Date().toISOString().split('T')[0];
+
+    let regDate = payload.date;
+    if (regDate && typeof regDate === 'string' && regDate.includes('T')) {
+        regDate = regDate.split('T')[0];
+    }
+    if (!regDate) {
+        regDate = new Date().toLocaleDateString('en-CA');
+    }
+
+    const localToday = new Date().toLocaleDateString('en-CA');
+    if (regDate > localToday) {
+        const err = new Error('Regularisation date cannot be in the future. Please select a past or current date.');
+        err.status = 400;
+        throw err;
+    }
+
     const regType = payload.type || 'Forgot Punch';
-    const regReason = payload.reason || '';
+    const regReason = (payload.reason || '').trim();
+    if (!regReason) {
+        const err = new Error('Reason is required for regularisation.');
+        err.status = 400;
+        throw err;
+    }
 
     // 1. Create Regularisation record keeping status as 'Approved' directly
     const created = await Regularisation.create({
@@ -174,7 +194,12 @@ const createRegularisation = async (payload, user = {}) => {
     // 2. Immediately update/upsert Attendance record for that employee and date
     const targetStatus = payload.targetStatus || payload.mark || 'P';
     const managerName = user.employeeName || user.name || '';
-    const odDrNotes = (targetStatus === 'OD' || targetStatus === 'DR') ? (payload.notes || payload.remarks || null) : null;
+    const odDrNotes = (targetStatus === 'OD' || targetStatus === 'DR') ? ((payload.notes || payload.remarks || regReason || '').trim() || null) : null;
+    if ((targetStatus === 'OD' || targetStatus === 'DR') && !odDrNotes) {
+        const err = new Error(`Remarks are mandatory when regularising as ${targetStatus === 'OD' ? 'On Duty (OD)' : 'Duty Rest (DR)'}.`);
+        err.status = 400;
+        throw err;
+    }
 
     try {
         await Attendance.upsert({
@@ -356,12 +381,19 @@ const saveMarksBulk = async (payload, user = {}) => {
             throw err;
         }
 
+        const notesStr = (item.notes || item.remarks || '').trim();
+        if ((mark === 'OD' || mark === 'DR') && !notesStr) {
+            const err = new Error(`Remarks are mandatory for employee ${empId} when marking as ${mark === 'OD' ? 'On Duty (OD)' : 'Duty Rest (DR)'}.`);
+            err.status = 400;
+            throw err;
+        }
+
         const shift = item.shift || '1st Shift';
         const finalManager = managerName || item.manager || 'Manager';
         const finalEmpName = empFromDb?.employeeName || item.name || item.employeeName || null;
         const finalEmpRole = item.role || item.employeeRole || null;
         const finalOutletId = empFromDb?.outletId || userOutletId || managerOutletId || null;
-        const finalNotes = (mark === 'OD' || mark === 'DR') ? (item.notes || null) : null;
+        const finalNotes = (mark === 'OD' || mark === 'DR') ? notesStr : null;
 
         updates.push(
             Attendance.upsert({
