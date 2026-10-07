@@ -347,6 +347,8 @@ import partsRoughEstimatedatas from './roughEstimate/models/partsRoughEstimate.j
 import Etalogdatas from './Parts/partsissue/models/etalogs.js';
 import catalogueUserDatas from './Parts/partsCatalogue/models/catalogueuser.js';
 import dmsTokendatas from './user/models/DmsToken.js';
+import attendancedatas from './attendance/models/attendance.js';
+import regularisationdatas from './attendance/models/regularisation.js';
 
 db.users = userdatas(sequelize, DataTypes);
 db.MasterCustomerAccount = MasterCustomerAccount(sequelize, DataTypes);
@@ -605,6 +607,8 @@ db.laborRoughEstimate = labourRoughEstimateDatas(sequelize, DataTypes);
 db.partsRoughEstimate = partsRoughEstimatedatas(sequelize, DataTypes);
 db.etalogs = Etalogdatas(sequelize, DataTypes);
 db.catalogueusers = catalogueUserDatas(sequelize, DataTypes);
+db.attendance = attendancedatas(sequelize, DataTypes);
+db.attendanceRegularisations = regularisationdatas(sequelize, DataTypes);
 sequelize.sync({ force: false })  // force: true drops the table and recreates it, false ensures it's created only if it doesn't exist
   .then(() => {
     console.log('Tables have been created');

@@ -76,7 +76,7 @@ register.registerMetric(httpResponseTime);
 app.use(cookieParser());
 
 const corsOptions = {
-  origin: "http://localhost:7000", // Your frontend URL
+  origin: "http://localhost:5173", // Your frontend URL
   // credentials: true, // Allow cookies
   // methods: ["GET", "POST", "PUT", "DELETE"],
   // allowedHeaders: ["Content-Type", "Authorization", "x-csrf-token"],
@@ -415,6 +415,8 @@ import mobileImageRouter from './modules/images/mobileroute.js';
 import clickRouter from './modules/clickins/mobileRoute.js';
 import roughEstimateRouter from './modules/roughEstimate/routes.js';
 import PartsCatalogueMobileRouter from './modules/Parts/partsCatalogue/mobileRoutes.js';
+import attendanceRouter from './modules/attendance/routes.js';
+
 
 app.use('/api/users', userRouter);
 app.use('/api/items', itemRouter);
@@ -498,6 +500,7 @@ app.use('/api/partsGpt', partsGptRouter);
 app.use('/api/erp_stock_transfer',erpStockTransferRouter);
 app.use('/api/roughEstimate', roughEstimateRouter);
 app.use('/api/partsCatalogueDms',partsCatalogueRouterDms) // old dms routes with dms token validation
+app.use('/api/attendance', attendanceRouter);
 
 // Mobile Routes
 app.use("/api/apis/masters", mobileMastersRouter);  
