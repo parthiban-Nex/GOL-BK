@@ -76,7 +76,7 @@ register.registerMetric(httpResponseTime);
 app.use(cookieParser());
 
 const corsOptions = {
-  origin: "http://localhost:7000", // Your frontend URL
+  origin: "http://localhost:5173", // Your frontend URL
   // credentials: true, // Allow cookies
   // methods: ["GET", "POST", "PUT", "DELETE"],
   // allowedHeaders: ["Content-Type", "Authorization", "x-csrf-token"],
@@ -124,7 +124,7 @@ app.get("/api/metrics", async (req, res) => {
 
 app.use((req, res, next) => {
   // Set default cache for safe GET requests
-  if (req.method === 'GET' ) {
+  if (req.method === 'GET') {
     res.set('Cache-Control', 'public, max-age=10');
   } else {
     res.set('Cache-Control', 'no-store'); // avoid caching sensitive or dynamic data
@@ -162,22 +162,22 @@ const io = new Server(server, {
   cors: {
     origin: '*',
   },
-    path: "/api/socket.io",
+  path: "/api/socket.io",
 
 });
 
- let partsmartNamespace = io.of("/dmspartsmartchat");
+let partsmartNamespace = io.of("/dmspartsmartchat");
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
   if (!token) return next(new Error("Unauthorized Soket Connection: No token provided----------------"));
 
-  socket.user = token; 
+  socket.user = token;
   next();
 });
 
 partsmartNamespace.use((socket, next) => {
   const apiKey = socket.handshake.auth?.apiKey;
-   console.log(apiKey,process.env.PARTNER_SECRET_KEY,"apikey")
+  console.log(apiKey, process.env.PARTNER_SECRET_KEY, "apikey")
   if (apiKey !== process.env.PARTNER_SECRET_KEY) {
     return next(new Error("Unauthorized Partner Connection"));
   }
@@ -198,24 +198,24 @@ io.on("connection", (socket) => {
   // socket.emit("server_ready", {
   //   message: "Hello from server",
   // });
-socket.on("join_enquiry_room", ({ enquiryNo }) => {
-  socket.join(`enquiry_${enquiryNo}`);
-  console.log(enquiryNo,"teshsash")
-});
+  socket.on("join_enquiry_room", ({ enquiryNo }) => {
+    socket.join(`enquiry_${enquiryNo}`);
+    console.log(enquiryNo, "teshsash")
+  });
 
   socket.on("create_partner_chat", (data) => {
-      console.log("create_partner_chat received:", data);
+    console.log("create_partner_chat received:", data);
 
-  partsmartNamespace.emit("enquiry_chat", {
-    data
+    partsmartNamespace.emit("enquiry_chat", {
+      data
+    });
   });
-});
 
   socket.on("join_room", ({ outletCode }) => {
-     if (!CHAT_ALLOWED_ROLES.includes(roleName)) {
-    console.log("Chat not allowed:", roleName);
-    return;
-  }
+    if (!CHAT_ALLOWED_ROLES.includes(roleName)) {
+      console.log("Chat not allowed:", roleName);
+      return;
+    }
     socket.join(`jobcard_${outletCode}`);
     console.log(`Joined room jobcard_${outletCode}`);
   });
@@ -277,8 +277,8 @@ partsmartNamespace.on("connection", (socket) => {
     socket.join(`enquiry_${enquiryNo}`); // partner-side room
   });
 
-  socket.on("send_partner_message", ({  message ,enquiryNo}) => {
-    console.log(message,"chat message")
+  socket.on("send_partner_message", ({ message, enquiryNo }) => {
+    console.log(message, "chat message")
     const payload = {
       message,
       sender: "partner",
@@ -294,10 +294,10 @@ partsmartNamespace.on("connection", (socket) => {
     io.to(`enquiry_${enquiryNo}`)
       .emit("receive_partner_message", payload);
   });
- socket.on("enquiry_chat", ({ jobCardNo,message,enquiryNo }) => {
-  console.log("Received enquiry_chat for:", jobCardNo,message,enquiryNo);
-  
-});
+  socket.on("enquiry_chat", ({ jobCardNo, message, enquiryNo }) => {
+    console.log("Received enquiry_chat for:", jobCardNo, message, enquiryNo);
+
+  });
 
   socket.on("disconnect", () => {
     console.log("Partner disconnected");
@@ -313,7 +313,7 @@ import itemcategorieRouter from './modules/itemCategory/routes.js';
 import hsnRouter from './modules/hsn/routes.js';
 import companyRouter from './modules/company/routes.js';
 import uomRouter from './modules/uom/routes.js';
-import aggregateRouter from './modules/aggregate/routes.js'; 
+import aggregateRouter from './modules/aggregate/routes.js';
 import subAggregateRouter from './modules/subaggregate/routes.js';
 import logApiRouter from './modules/logApi/routes.js';
 import makeRouter from './modules/make/routes.js';
@@ -386,11 +386,11 @@ import partsCatalogueRouterDms from './modules/Parts/partsCatalogue/oldDmsRoutes
 import TaslAutoGrnRouter from './modules/Parts/taslAutoGrn/routes.js';
 import accountStatementRouter from './modules/accountStatement/routes.js';
 //  mobile routes declare here 
-import mobileMastersRouter from './modules/masters/mobileMasterRoutes.js';   
-import mobileLaborScheduleRouter from './modules/laborSchedule/mobileLaborScheduleRoute.js';  
-import mobileItemRouter from './modules/item/mobileItemRoutes.js';   
-import mobileServiceEstimateRouter from './modules/serviceEstimate/mobileServiceEstimateRoute.js';  
-import MobileJobCardRouter from './modules/jobCard/mobileJobCardRoute.js';  
+import mobileMastersRouter from './modules/masters/mobileMasterRoutes.js';
+import mobileLaborScheduleRouter from './modules/laborSchedule/mobileLaborScheduleRoute.js';
+import mobileItemRouter from './modules/item/mobileItemRoutes.js';
+import mobileServiceEstimateRouter from './modules/serviceEstimate/mobileServiceEstimateRoute.js';
+import MobileJobCardRouter from './modules/jobCard/mobileJobCardRoute.js';
 import mobileUserRouter from './modules/user/mobileroutes.js';
 import mobileCustomerRouter from './modules/customer/mobileroutes.js';
 import mobileVehicleRouter from './modules/vehicle/mobileRoutes.js';
@@ -415,6 +415,8 @@ import mobileImageRouter from './modules/images/mobileroute.js';
 import clickRouter from './modules/clickins/mobileRoute.js';
 import roughEstimateRouter from './modules/roughEstimate/routes.js';
 import PartsCatalogueMobileRouter from './modules/Parts/partsCatalogue/mobileRoutes.js';
+import expenseVendorRouter from './modules/expenseVendor/routes.js';
+import expenseRouter from './modules/expense/routes.js';
 
 app.use('/api/users', userRouter);
 app.use('/api/items', itemRouter);
@@ -434,6 +436,8 @@ app.use('/api/repairtypes', repairTypeRouter);
 app.use('/api/sources', sourceRouter);
 app.use('/api/sourcetypes', sourceTypeRouter);
 app.use('/api/vendors', vendorRouter);
+app.use('/api/expenseVendor', expenseVendorRouter);
+app.use('/api/expense', expenseRouter);
 app.use('/api/disposition', disPositionRouter);
 app.use('/api/subdisposition', subDisPositionRouter);
 app.use('/api/laborSchedules', laborScheduleRouter);
@@ -474,7 +478,7 @@ app.use('/api/paramAlertSchedule', paramAlertScheduleRouter);
 app.use('/api/inventoryPhotoCategory', inventoryPhotoCategoryRouter);
 app.use('/api/menuSettings', menuSettingsRouter);
 app.use('/api/receipt', receiptRouter);
-app.use("/api/bulkUpload",bulkUploadRouter)
+app.use("/api/bulkUpload", bulkUploadRouter)
 
 app.use("/api/jobCard", casualGatePassRouter);
 app.use("/api/creditNotes", creditRouter);
@@ -486,37 +490,37 @@ app.use("/api/leadManagement", leadRouter);
 app.use('/api/scheme', schemeRouter);
 app.use('/api/vehicleContract', vehicleContractRouter);
 app.use('/api/eInvoice', eInvoice);
-app.use('/api/feedbackqn',feedbackQnRouter)
-app.use('/api/psfreview',psfreviewrouter)
-app.use('/api/stock_transfer_oracles',StockTransferOracleRouter)
-app.use('/api/partsCatalogue',partsCatalogueRouter)
-app.use('/api/enquiry',enquiryRouter)
-app.use('/api/taslAutoGrn',TaslAutoGrnRouter)
-app.use('/api/nmsaagent',nmsaAgentRouter)
-app.use('/api/franchiseonboarding',franchiseOnboardingRouter)
+app.use('/api/feedbackqn', feedbackQnRouter)
+app.use('/api/psfreview', psfreviewrouter)
+app.use('/api/stock_transfer_oracles', StockTransferOracleRouter)
+app.use('/api/partsCatalogue', partsCatalogueRouter)
+app.use('/api/enquiry', enquiryRouter)
+app.use('/api/taslAutoGrn', TaslAutoGrnRouter)
+app.use('/api/nmsaagent', nmsaAgentRouter)
+app.use('/api/franchiseonboarding', franchiseOnboardingRouter)
 app.use('/api/partsGpt', partsGptRouter);
-app.use('/api/erp_stock_transfer',erpStockTransferRouter);
+app.use('/api/erp_stock_transfer', erpStockTransferRouter);
 app.use('/api/roughEstimate', roughEstimateRouter);
-app.use('/api/partsCatalogueDms',partsCatalogueRouterDms) // old dms routes with dms token validation
+app.use('/api/partsCatalogueDms', partsCatalogueRouterDms) // old dms routes with dms token validation
 
 // Mobile Routes
-app.use("/api/apis/masters", mobileMastersRouter);  
-app.use('/api/apis/labor_master', mobileLaborScheduleRouter);  
-app.use('/api/apis/parts_master', mobileItemRouter);  
-app.use('/api/apis', mobileServiceEstimateRouter);  
-app.use('/api/apis', MobileJobCardRouter);  
-app.use('/api/apis', mobileUserRouter); 
-app.use('/api/apis', mobileCustomerRouter); 
-app.use('/api/apis', mobileVehicleRouter); 
-app.use('/api/apis',mobilePartsRouter)
-app.use('/api/apis', mobileBeatPlanRouter); 
-app.use('/api/apis', mobileNmsaAgentRouter); 
+app.use("/api/apis/masters", mobileMastersRouter);
+app.use('/api/apis/labor_master', mobileLaborScheduleRouter);
+app.use('/api/apis/parts_master', mobileItemRouter);
+app.use('/api/apis', mobileServiceEstimateRouter);
+app.use('/api/apis', MobileJobCardRouter);
+app.use('/api/apis', mobileUserRouter);
+app.use('/api/apis', mobileCustomerRouter);
+app.use('/api/apis', mobileVehicleRouter);
+app.use('/api/apis', mobilePartsRouter)
+app.use('/api/apis', mobileBeatPlanRouter);
+app.use('/api/apis', mobileNmsaAgentRouter);
 app.use('/api/apis', mobileVendorRouter);
 app.use('/api/apis', mobileFranchiseOnboardingRouter);
 app.use('/api/apis', mobileSoaRouter);
-app.use('/api/apis',mobileErpRouter);
+app.use('/api/apis', mobileErpRouter);
 
-app.use('/api/apis',mobilePartIssueRouter)
+app.use('/api/apis', mobilePartIssueRouter)
 // app.get("/api/csrf-token", (req, res) => {
 //   const token = generateCsrfToken(req, res); // Sets cookie + returns token
 //   // res.json({ csrfToken: token });
@@ -524,30 +528,30 @@ app.use('/api/apis',mobilePartIssueRouter)
 
 // });
 //parts api without audit log
-app.use(captureResponse);       
-app.use(auditLogMiddleware);    
-app.use('/api/parts', partsRouter);  
+app.use(captureResponse);
+app.use(auditLogMiddleware);
+app.use('/api/parts', partsRouter);
 app.use('/api/partissue', partIssueRouter);
-app.use("/api/partreturn",partReturnRouter)
-app.use("/api/countersale",counterSaleRouter)
-app.use("/api/stocktransfer",StockTransferRouter)
+app.use("/api/partreturn", partReturnRouter)
+app.use("/api/countersale", counterSaleRouter)
+app.use("/api/stocktransfer", StockTransferRouter)
 app.use("/api/purchaseOrder", PORouter);
 app.use("/api/gateIn", GateinRouter);
-app.use('/api/psfreview',psfreviewrouter)
+app.use('/api/psfreview', psfreviewrouter)
 app.use('/api/eInvoice', eInvoice);
-app.use('/api/feedbackqn',feedbackQnRouter)
-app.use('/api/stock_transfer_oracles',StockTransferOracleRouter)
-app.use('/api/partsCatalogue',partsCatalogueRouter)
-app.use('/api/enquiry',enquiryRouter)
-app.use('/api/taslAutoGrn',TaslAutoGrnRouter)
-app.use('/api/accountStatement',accountStatementRouter)
+app.use('/api/feedbackqn', feedbackQnRouter)
+app.use('/api/stock_transfer_oracles', StockTransferOracleRouter)
+app.use('/api/partsCatalogue', partsCatalogueRouter)
+app.use('/api/enquiry', enquiryRouter)
+app.use('/api/taslAutoGrn', TaslAutoGrnRouter)
+app.use('/api/accountStatement', accountStatementRouter)
 app.use(ErrorHandler);
-app.use('/api/apis',carpmRouter);
+app.use('/api/apis', carpmRouter);
 app.use('/api/apis', checkListsRouter)
 app.use('/api/apis', mobileImageRouter);
-app.use('/api/apis',gateinVehicleInventoryRouter);
-app.use('/api/apis',clickRouter);
-app.use('/api/apis',PartsCatalogueMobileRouter) 
+app.use('/api/apis', gateinVehicleInventoryRouter);
+app.use('/api/apis', clickRouter);
+app.use('/api/apis', PartsCatalogueMobileRouter)
 
 //testing api
 
