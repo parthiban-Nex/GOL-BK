@@ -63,6 +63,14 @@ const uploadAttachment = (req, res, next) => {
 
 const router = express.Router();
 
+// Disable disk and browser caching for attendance API endpoints
+router.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 // 1. Employees under logged-in person
 router.get('/employees', JwtMiddleware.checkToken, controller.getEmployees);
 
