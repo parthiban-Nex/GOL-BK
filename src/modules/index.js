@@ -1,4 +1,4 @@
-import {dbConfig} from '../config/dbConfig.js';
+import { dbConfig } from '../config/dbConfig.js';
 import { Sequelize, DataTypes, Model } from 'sequelize';
 // import ('dotenv').config();
 const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
@@ -347,7 +347,11 @@ import partsRoughEstimatedatas from './roughEstimate/models/partsRoughEstimate.j
 import Etalogdatas from './Parts/partsissue/models/etalogs.js';
 import catalogueUserDatas from './Parts/partsCatalogue/models/catalogueuser.js';
 import dmsTokendatas from './user/models/DmsToken.js';
+import expenseVendordatas from './expenseVendor/models/expenseVendor.js';
+import expensedatas from './expense/models/expense.js';
 
+db.expenseVendors = expenseVendordatas(sequelize, DataTypes);
+db.expenses = expensedatas(sequelize, DataTypes);
 db.users = userdatas(sequelize, DataTypes);
 db.MasterCustomerAccount = MasterCustomerAccount(sequelize, DataTypes);
 db.customerAccountSettings = CustomerAccountSettings(sequelize, DataTypes);
@@ -640,10 +644,10 @@ db.countersalereturn.belongsTo(db.outlets, {
   as: 'outlet'
 });
 
-db.outletSequenceNums.belongsTo(db.outlets,{
-foreignKey : 'outlet_code',
-targetKey: 'outletCode', 
-as: 'outletSequenceNum' 
+db.outletSequenceNums.belongsTo(db.outlets, {
+  foreignKey: 'outlet_code',
+  targetKey: 'outletCode',
+  as: 'outletSequenceNum'
 });
 
 db.monthlyTarget.belongsTo(db.outlets, {
