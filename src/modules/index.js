@@ -266,6 +266,7 @@ import MobileApiTrackData from './mobileApis/models/mobileReqResDetails.js';
 import customercomplaintsourcedatas from './psfreview/models/customercomplaintsource.js';
 import customercomplaintdatas from './psfreview/models/customercomplaint.js';
 import cartdatas from './Parts/partsCatalogue/models/cart.js';
+import partCartDatas from './catelog/top20Cars/partCart.js';
 import OutletSequenceNumData from './jobCard/models/outletSequenceNum.js';
 import orderhistorydatas from './Parts/partsCatalogue/models/orderhistory.js';
 import stocktransferreqdata from './Parts/stockTransfer/models/stocktransferrequest.js';
@@ -347,6 +348,11 @@ import partsRoughEstimatedatas from './roughEstimate/models/partsRoughEstimate.j
 import Etalogdatas from './Parts/partsissue/models/etalogs.js';
 import catalogueUserDatas from './Parts/partsCatalogue/models/catalogueuser.js';
 import dmsTokendatas from './user/models/DmsToken.js';
+
+import catelogdatas from './catelog/top20Cars/catelog.js';
+import top20carsdatas from './catelog/top20Cars/top20Cars.js';
+import partsmartOrderEnquiryDatas from './catelog/top20Cars/partsmartOrderEnquiry.js';
+import LubesProductData from './catelog/models/lubesProduct.js';
 
 db.users = userdatas(sequelize, DataTypes);
 db.MasterCustomerAccount = MasterCustomerAccount(sequelize, DataTypes);
@@ -605,7 +611,12 @@ db.laborRoughEstimate = labourRoughEstimateDatas(sequelize, DataTypes);
 db.partsRoughEstimate = partsRoughEstimatedatas(sequelize, DataTypes);
 db.etalogs = Etalogdatas(sequelize, DataTypes);
 db.catalogueusers = catalogueUserDatas(sequelize, DataTypes);
-sequelize.sync({ force: false })  // force: true drops the table and recreates it, false ensures it's created only if it doesn't exist
+db.catelogs = catelogdatas(sequelize, DataTypes);
+db.top20Cars = top20carsdatas(sequelize, DataTypes);
+db.partsmartOrderEnquiries = partsmartOrderEnquiryDatas(sequelize, DataTypes);
+db.partCarts = partCartDatas(sequelize, DataTypes);
+db.lubesProducts = LubesProductData(sequelize, DataTypes);
+sequelize.sync({ })  // force: true drops the table and recreates it, false ensures it's created only if it doesn't exist
   .then(() => {
     console.log('Tables have been created');
   })

@@ -416,6 +416,10 @@ import clickRouter from './modules/clickins/mobileRoute.js';
 import roughEstimateRouter from './modules/roughEstimate/routes.js';
 import PartsCatalogueMobileRouter from './modules/Parts/partsCatalogue/mobileRoutes.js';
 
+//global and top 20 cars
+
+import catelogRouter from './modules/catelog/routes.js';
+
 app.use('/api/users', userRouter);
 app.use('/api/items', itemRouter);
 app.use('/api/itemgroups', itemGroupRouter);
@@ -548,6 +552,12 @@ app.use('/api/apis', mobileImageRouter);
 app.use('/api/apis',gateinVehicleInventoryRouter);
 app.use('/api/apis',clickRouter);
 app.use('/api/apis',PartsCatalogueMobileRouter) 
+
+// catalog global and top 20 cars
+
+app.use('/api/catelog', catelogRouter);
+app.use('/api/jobCards', catelogRouter);
+app.use('/api/LubesProducts', catelogRouter);
 
 //testing api
 
