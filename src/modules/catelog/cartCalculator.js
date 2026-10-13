@@ -28,10 +28,70 @@ function isCompareMatch(selectedPart, comparePart) {
   return false;
 }
 
+export const TIER_DISCOUNTS = {
+  oem: 0.04,        // 4% discount
+  primary: 0.13,    // 13% discount
+  secondary: 0.20,  // 20% discount
+};
+
+export function getCalculatedSaleRate(mrp, tierType) {
+  const numericMrp = Number(mrp) || 0;
+  if (!tierType || numericMrp <= 0) return numericMrp;
+  const rawTier = String(tierType).trim().toLowerCase();
+
+  let discountRate = 0;
+  if (rawTier.includes('oem')) {
+    discountRate = TIER_DISCOUNTS.oem;
+  } else if (rawTier.includes('secondary')) {
+    discountRate = TIER_DISCOUNTS.secondary;
+  } else if (rawTier.includes('primary')) {
+    discountRate = TIER_DISCOUNTS.primary;
+  } else if (TIER_DISCOUNTS[rawTier]) {
+    discountRate = TIER_DISCOUNTS[rawTier];
+  }
+
+  if (!discountRate) return numericMrp;
+  return Math.round(numericMrp * (1 - discountRate));
+}
+
+export function formatDisplayPartNo(partNumber) {
+  if (!partNumber) return '';
+  return String(partNumber).trim().replace(/^(215|055|703)/, '');
+}
+
 export function prepareCartResponse(cartObject = {}) {
   const selected = Array.isArray(cartObject.selected) ? cartObject.selected : [];
-  const compare = Array.isArray(cartObject.compare) ? cartObject.compare : [];
-  const parts = Array.isArray(cartObject.parts) ? cartObject.parts : [];
+  const rawCompare = Array.isArray(cartObject.compare) ? cartObject.compare : [];
+  const rawParts = Array.isArray(cartObject.parts) ? cartObject.parts : [];
+
+  const compare = rawCompare.map((compItem) => {
+    const mrp = toNumber(compItem.mrp);
+    let saleRate = toNumber(compItem.saleRate || compItem.listPrice || mrp);
+    const tier = compItem.tierType || compItem.tier || compItem.type;
+    if (tier && (saleRate === mrp || !compItem.saleRate) && mrp > 0) {
+      saleRate = getCalculatedSaleRate(mrp, tier);
+    }
+    return {
+      ...compItem,
+      mrp,
+      saleRate,
+    };
+  });
+
+  const parts = rawParts.map((p) => {
+    const mrp = toNumber(p.mrp);
+    let saleRate = toNumber(p.saleRate || p.listPrice || mrp);
+    const tier = p.tierType || p.tier || p.type;
+    if (tier && (saleRate === mrp || !p.saleRate) && mrp > 0) {
+      saleRate = getCalculatedSaleRate(mrp, tier);
+    }
+    return {
+      ...p,
+      mrp,
+      saleRate,
+    };
+  });
+
   const hasCompareData = compare.length > 0;
 
   let totalAmount = 0;
@@ -46,7 +106,11 @@ export function prepareCartResponse(cartObject = {}) {
   const updatedSelected = selected.map((part) => {
     const quantity = toNumber(part.quantity) > 0 ? toNumber(part.quantity) : 1;
     const mrp = toNumber(part.mrp);
-    const saleRate = toNumber(part.saleRate || part.listPrice || mrp);
+    let saleRate = toNumber(part.saleRate || part.listPrice || mrp);
+    const tier = part.tierType || part.tier || part.type;
+    if (tier && (saleRate === mrp || !part.saleRate) && mrp > 0) {
+      saleRate = getCalculatedSaleRate(mrp, tier);
+    }
     const listPrice = toNumber(part.listPrice || mrp);
     const taxPercent = toNumber(part.taxpercent || 18);
 
@@ -111,6 +175,7 @@ export function prepareCartResponse(cartObject = {}) {
     totalDiscountAmount += discountAmount;
 
     return {
+      ...part,
       customerCode: part.customerCode || '0046',
       quantity,
       brandName: part.brandName || part.product_brand || '',
@@ -146,7 +211,6 @@ export function prepareCartResponse(cartObject = {}) {
       compareSaleRate: compareSaleRate !== null ? roundAmount(compareSaleRate) : null,
       savingPerUnit: savingPerUnit !== null ? roundAmount(savingPerUnit) : null,
       savingAmount: savingAmount !== null ? roundAmount(savingAmount) : null,
-      ...part,
     };
   });
 

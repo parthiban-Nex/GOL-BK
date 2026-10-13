@@ -29,12 +29,9 @@ router.post('/addToCart', JwtMiddleware.checkToken, partsCatalogueController.add
 router.post('/updateQuantity', JwtMiddleware.checkToken, partsCatalogueController.updateQty);
 router.post('/removeItem', JwtMiddleware.checkToken, partsCatalogueController.deleteCartItem);
 
-// Orders / Enquiries endpoints
-router.get('/orders', JwtMiddleware.checkToken, controller.getOrders);
-router.get('/getOrderHistories', JwtMiddleware.checkToken, partsCatalogueController.getOrderHistories);
-router.post('/placeOrderNew', JwtMiddleware.checkToken, partsCatalogueController.placeOrderNew);
-router.post('/getOrderStatus', JwtMiddleware.checkToken, partsCatalogueController.getOrderStatus);
+// Direct Enquiry Order Endpoints (3 Core APIs)
 router.post('/partsmart/order/direct-enquiry/create', JwtMiddleware.checkToken, controller.createDirectEnquiryOrder);
+router.get('/partsmart/order/direct-enquiry/list', JwtMiddleware.checkToken, controller.getDirectEnquiryOrderList);
 router.post('/partsmart/order/direct-enquiry/status', JwtMiddleware.checkToken, controller.getDirectEnquiryOrderStatus);
 
 // Top 20 Cars endpoints
@@ -46,26 +43,14 @@ router.post('/vehicleResolve', controller.resolveVehicle);
 router.get('/getVahanDetails', controller.getVahanDetails);
 
 // Lubes Products endpoints
-router.get('/list', controller.getLubesProducts);
-router.post('/list', controller.getLubesProducts);
 router.get('/LubesProducts/list', controller.getLubesProducts);
 router.post('/LubesProducts/list', controller.getLubesProducts);
 
-router.post('/upload', upload.single('file'), controller.uploadLubesProducts);
-router.post('/LubesProducts/upload', upload.single('file'), controller.uploadLubesProducts);
-
-router.post('/seed', controller.seedLubesProducts);
+router.post('/LubesProducts/upload', upload.any(), controller.uploadLubesProducts);
 router.post('/LubesProducts/seed', controller.seedLubesProducts);
-
-router.patch('/update', controller.updateLubesProduct);
-router.patch('/LubesProducts/update', controller.updateLubesProduct);
-router.post('/update', controller.updateLubesProduct);
-router.post('/LubesProducts/update', controller.updateLubesProduct);
-
-router.post('/create', controller.createLubesProduct);
-router.post('/insert', controller.createLubesProduct);
 router.post('/LubesProducts/create', controller.createLubesProduct);
-router.post('/LubesProducts/insert', controller.createLubesProduct);
+router.post('/LubesProducts/update', controller.updateLubesProduct);
+router.patch('/LubesProducts/update', controller.updateLubesProduct);
 
 // Global Catalog routes
 router.use('/global', globalCatelogRouter);

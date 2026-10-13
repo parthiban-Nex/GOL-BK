@@ -8,6 +8,8 @@ import {
   getTop20CarsService,
   createTop20CarService,
   createDirectEnquiryOrderService,
+  getDirectEnquiryOrderListService,
+  getDirectEnquiryOrderStatusService,
   getOrdersService,
   callOrderApi,
   resolveVehicleService,
@@ -139,29 +141,71 @@ export const getOrders = async (req, res, next) => {
 };
 
 /**
- * Creates a direct enquiry order
+ * 1. Place Order (Direct Enquiry Create)
  */
 export const createDirectEnquiryOrder = async (req, res, next) => {
   try {
-    const { parts, customer_code, reference_no, vehicle_no } = req.body;
+    const clientAuthHeader =
+      req.headers['x-dearo-token'] ||
+      req.headers['dearo-token'] ||
+      req.headers.authorization;
+    const userId = req.user?.id;
 
-    if (!Array.isArray(parts) || parts.length === 0) {
-      return res.status(400).json({ success: false, message: 'parts array cannot be empty' });
+    const workshopId =
+      req.body.workshopId ||
+      req.body.workshop_id ||
+      req.query.workshopId ||
+      req.user?.outlet_code ||
+      req.user?.outletCode ||
+      req.user?.outlet?.outletCode ||
+      req.user?.workshopId ||
+      req.user?.customer_account_id ||
+      '';
+
+    const customerCode =
+      req.body.customer_code ||
+      req.body.customerCode ||
+      req.query.customer_code ||
+      req.query.customerCode ||
+      req.user?.customer_code ||
+      req.user?.customerCode ||
+      req.user?.customer_account_id ||
+      '';
+
+    const rawParts = Array.isArray(req.body.parts) ? req.body.parts : [];
+    const parts = rawParts
+      .filter((p) => p && (p.part_no || p.partNo || p.partNumber))
+      .map((p) => ({
+        part_no: String(p.part_no || p.partNo || p.partNumber).trim(),
+        qty: Number(p.qty || p.quantity || 1),
+      }));
+
+    if (!customerCode || parts.length === 0) {
+      return res.status(400).json({
+        error: {
+          statusCode: 400,
+          name: 'Error',
+          message: 'parts must contain at least one part, customer_code is required',
+        },
+      });
     }
 
-    const userId = req.user?.id;
-    const workshopId = req.user?.outlet_code || req.user?.outlet?.outletCode;
-
     const payload = {
-      customer_code: customer_code || '050',
-      parts: parts.map((p) => ({ part_no: String(p.part_no).trim(), qty: Number(p.qty) })),
-      source: 'dearo',
-      channel: 'B2B-API',
-      reference_no: reference_no || '',
-      vehicle_no: vehicle_no || '',
+      workshopId: String(workshopId).trim(),
+      customer_code: String(customerCode).trim(),
+      source: req.body.source || 'GOL',
+      channel: req.body.channel || 'B2B-API',
+      reference_no: req.body.reference_no || req.body.referenceNo || '',
+      vehicle_no: req.body.vehicle_no || req.body.vehicleNo || '',
+      parts,
+      dearo_token: req.body.dearo_token || req.headers['x-dearo-token'] || req.headers['dearo-token'] || null,
     };
 
-    const response = await createDirectEnquiryOrderService(payload, userId, workshopId);
+    const response = await createDirectEnquiryOrderService(payload, userId, clientAuthHeader);
+
+    if (response?.error) {
+      return res.status(response.error.statusCode || 400).json(response);
+    }
 
     return res.status(200).json(response);
   } catch (error) {
@@ -171,23 +215,69 @@ export const createDirectEnquiryOrder = async (req, res, next) => {
 };
 
 /**
- * Direct Enquiry Order Status
+ * 2. Order List (Direct Enquiry List)
+ */
+export const getDirectEnquiryOrderList = async (req, res, next) => {
+  try {
+    const clientAuthHeader =
+      req.headers['x-dearo-token'] ||
+      req.headers['dearo-token'] ||
+      req.headers.authorization;
+    const userId = req.user?.id;
+
+    const workshopId =
+      req.query.workshopId ||
+      req.body.workshopId ||
+      req.user?.outlet_code ||
+      req.user?.outletCode ||
+      req.user?.outlet?.outletCode ||
+      req.user?.workshopId ||
+      req.user?.customer_account_id ||
+      '';
+
+    const response = await getDirectEnquiryOrderListService(workshopId, clientAuthHeader, userId);
+    return res.status(200).json(response);
+  } catch (error) {
+    logger.error('Catelog Controller getDirectEnquiryOrderList Error:', error.message);
+    next(error);
+  }
+};
+
+/**
+ * 3. Order Status (Real-time Enquiry Tracking)
  */
 export const getDirectEnquiryOrderStatus = async (req, res, next) => {
   try {
-    const { enquiry_no, reference_no } = req.body;
+    const clientAuthHeader =
+      req.headers['x-dearo-token'] ||
+      req.headers['dearo-token'] ||
+      req.headers.authorization;
+    const enquiryNo = req.body.enquiry_no || req.body.enquiryNo;
+    const referenceNo = req.body.reference_no || req.body.referenceNo;
+    const source = req.body.source || 'GOL';
 
-    if (!enquiry_no && !reference_no) {
-      return res.status(400).json({ success: false, message: 'enquiry_no or reference_no is required' });
+    if (!enquiryNo && !referenceNo) {
+      return res.status(400).json({
+        error: {
+          statusCode: 400,
+          name: 'Error',
+          message: 'enquiry_no or reference_no is required',
+        },
+      });
     }
 
     const payload = {
-      enquiry_no,
-      reference_no,
-      source: 'dearo',
+      enquiry_no: enquiryNo,
+      reference_no: referenceNo,
+      source,
+      dearo_token: req.body.dearo_token || req.headers['x-dearo-token'] || req.headers['dearo-token'] || null,
     };
 
-    const response = await callOrderApi('/psm/direct-enquiry-order/status', payload);
+    const response = await getDirectEnquiryOrderStatusService(payload, clientAuthHeader);
+
+    if (response?.error) {
+      return res.status(response.error.statusCode || 400).json(response);
+    }
 
     return res.status(200).json(response);
   } catch (error) {
@@ -259,13 +349,30 @@ export const proxyImage = async (req, res, next) => {
       return response.data.pipe(res);
     } catch (err) {
       logger.warn('Primary image storage failed, using fallback Dearo image proxy:', err.message);
-      const dearoImageUrl = `https://uatws.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`;
-      const fallbackResponse = await axios.get(dearoImageUrl, { responseType: 'stream' });
 
-      if (fallbackResponse.headers['content-type']) {
-        res.setHeader('Content-Type', fallbackResponse.headers['content-type']);
+      const isProd = process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production';
+      const primaryDearoUrl = isProd
+        ? `https://api.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
+        : `https://uatws.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`;
+
+      const secondaryDearoUrl = isProd
+        ? `https://uatws.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
+        : `https://api.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`;
+
+      try {
+        const fallbackResponse = await axios.get(primaryDearoUrl, { responseType: 'stream', timeout: 10000 });
+        if (fallbackResponse.headers['content-type']) {
+          res.setHeader('Content-Type', fallbackResponse.headers['content-type']);
+        }
+        return fallbackResponse.data.pipe(res);
+      } catch (fallbackErr1) {
+        logger.warn('Primary Dearo image proxy fallback failed, trying secondary Dearo URL:', fallbackErr1.message);
+        const fallbackResponse2 = await axios.get(secondaryDearoUrl, { responseType: 'stream', timeout: 10000 });
+        if (fallbackResponse2.headers['content-type']) {
+          res.setHeader('Content-Type', fallbackResponse2.headers['content-type']);
+        }
+        return fallbackResponse2.data.pipe(res);
       }
-      return fallbackResponse.data.pipe(res);
     }
   } catch (error) {
     logger.error('Catelog proxyImage Error:', error.message);
@@ -330,17 +437,18 @@ export const getLubesProducts = async (req, res, next) => {
  */
 export const uploadLubesProducts = async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'CSV file is required. Use form-data field name: file' });
+    const file = req.file || (Array.isArray(req.files) && req.files.length > 0 ? req.files[0] : null);
+    if (!file) {
+      return res.status(400).json({ error: 'File is required. Upload a .csv or .xlsx file using form-data.' });
     }
 
     const userId = req.user?.id;
-    const result = await uploadLubesProductsService(req.file.buffer, req.file.originalname, userId);
+    const result = await uploadLubesProductsService(file.buffer, file.originalname, userId);
 
     return res.status(200).json(result);
   } catch (error) {
     logger.error('Catelog Controller uploadLubesProducts Error:', error);
-    return res.status(error.statusCode || 500).json({ error: error.message || 'Failed to upload Lubes Products CSV' });
+    return res.status(error.statusCode || 500).json({ error: error.message || 'Failed to upload Lubes Products file' });
   }
 };
 
@@ -402,6 +510,7 @@ export default {
   addCart,
   getOrders,
   createDirectEnquiryOrder,
+  getDirectEnquiryOrderList,
   getDirectEnquiryOrderStatus,
   getTop20Cars,
   createTop20Car,

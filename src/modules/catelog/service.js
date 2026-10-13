@@ -1,4 +1,5 @@
 import axios from 'axios';
+import ExcelJS from 'exceljs';
 import logger from '../../config/logger.js';
 import db from '../index.js';
 import { prepareCartResponse } from './cartCalculator.js';
@@ -22,12 +23,9 @@ let cachedTokenExpiresAt = null;
 
 const getPublicApiBaseUrl = () => {
   if (process.env.PUBLIC_API_BASE_URL) {
-    return process.env.PUBLIC_API_BASE_URL;
+    return process.env.PUBLIC_API_BASE_URL.replace(/\/+$/, '');
   }
-  if (process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production') {
-    return 'https://api.dearo.in/api';
-  }
-  return 'https://uatws.dearo.in/api';
+  return '/api';
 };
 
 const getBasicAuthHeader = () => {
@@ -66,10 +64,13 @@ const enrichMasterListResponse = (responseData, payload) => {
       // Normalize filename: replace slashes / with hyphens - and append .png
       const imageName = masterName ? masterName.replace(/\//g, '-') + '.png' : '';
 
-      // Generate proxy image URL supporting both UAT and Production environments dynamically
-      const imageUrl = item?.url || (imageName
-        ? `${publicBaseUrl}/jobCards/partsmart/image?type=Variant&name=${encodeURIComponent(imageName)}`
-        : null);
+      // Generate proxy image URL supporting both UAT and Production environments dynamically via GOL Backend proxy
+      let imageUrl = null;
+      if (item?.url && typeof item.url === 'string') {
+        imageUrl = item.url.replace(/^https?:\/\/(api|uatws)\.dearo\.in\/api/i, publicBaseUrl);
+      } else if (imageName) {
+        imageUrl = `${publicBaseUrl}/jobCards/partsmart/image?type=Variant&name=${encodeURIComponent(imageName)}`;
+      }
 
       return {
         masterName,
@@ -86,44 +87,104 @@ const enrichMasterListResponse = (responseData, payload) => {
  * Call Partsmart / Dearo External Master List API
  */
 export const getMasterListService = async (payload, clientAuthHeader = null) => {
-  const requestPayload = {
-    aggregate: formatArrayField(payload?.aggregate),
-    brand: formatArrayField(payload?.brand),
-    customerCode: payload?.customerCode || '050',
+  const rawGeneration =
+    payload?.vehicleGeneration ||
+    payload?.generation ||
+    payload?.generations ||
+    payload?.vehicleGenerations ||
+    payload?.vehicle_generation;
+
+  const initialCustomerCode = payload?.customerCode || '050';
+  const alternateCustomerCode = initialCustomerCode === '050' ? '0046' : '050';
+
+  const basePayload = {
+    customerCode: formatArrayField(payload?.customerCode || payload?.customerCodes || payload?.customerCodes),
+    aggregate: formatArrayField(payload?.aggregate || payload?.category || payload?.categories || payload?.aggregates),
+    brand: formatArrayField(payload?.brand || payload?.brands || payload?.brandName || payload?.brandsName),
     fuelType: formatArrayField(payload?.fuelType),
-    vehicleGeneration: payload?.vehicleGeneration ? String(payload.vehicleGeneration).trim() : null,
     limit: payload?.limit !== undefined ? payload.limit : 0,
-    make: formatArrayField(payload?.make),
+    make: formatArrayField(payload?.make || payload?.makes || payload?.makeName || payload?.makesName),
     masterType: payload?.masterType || 'make',
-    model: formatArrayField(payload?.model),
+    model: formatArrayField(payload?.model || payload?.models || payload?.modelName || payload?.modelsName),
     offset: payload?.offset !== undefined ? payload.offset : 0,
     partNumber: payload?.partNumber ? String(payload.partNumber).trim() : null,
     primary: payload?.primary !== undefined ? payload.primary : false,
     sortOrder: payload?.sortOrder || 'ASC',
-    subAggregate: formatArrayField(payload?.subAggregate),
+    subAggregate: formatArrayField(payload?.subAggregate || payload?.subCategory || payload?.subCategories || payload?.subAggregates),
     variant: formatArrayField(payload?.variant),
     year: formatArrayField(payload?.year),
   };
 
-  // Try 1: External Partsmart API with Basic Auth
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}getMasterList`,
-      requestPayload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: getBasicAuthHeader(),
-        },
-        timeout: 15000,
-      }
-    );
-    if (response.data && response.data.success !== false) {
-      return enrichMasterListResponse(response.data, requestPayload);
-    }
-  } catch (err) {
-    logger.warn('Partsmart External Catalog API getMasterList error:', err.response?.data || err.message);
+  const genArray = formatArrayField(rawGeneration);
+  const genString = rawGeneration
+    ? String(Array.isArray(rawGeneration) ? rawGeneration[0] : rawGeneration).trim()
+    : null;
+
+  // Build generation candidate representations: array, string, and null (fallback to maintain previous working flow)
+  const candidateGenerations = [];
+  if (genArray) {
+    candidateGenerations.push({ val: genArray, isFallback: false });
+    candidateGenerations.push({ val: genString, isFallback: false });
+    // Safety fallback to model variants so the UI is never broken if external API lacks generation-partitioned variants
+    candidateGenerations.push({ val: null, isFallback: true });
+  } else {
+    candidateGenerations.push({ val: null, isFallback: false });
   }
+
+  const customerCodes = [initialCustomerCode, alternateCustomerCode];
+
+  // Try 1: External Partsmart API with Basic Auth
+  for (const genCandidate of candidateGenerations) {
+    for (const cCode of customerCodes) {
+      const requestPayload = {
+        ...basePayload,
+        customerCode: cCode,
+        vehicleGeneration: genCandidate.val,
+      };
+
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}getMasterList`,
+          requestPayload,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: getBasicAuthHeader(),
+            },
+            timeout: 15000,
+          }
+        );
+
+        if (response.data && response.data.success !== false) {
+          const list = Array.isArray(response.data.data) ? response.data.data : [];
+          if (list.length > 0) {
+            // If this was a fallback without generation, attempt to filter matching variants by generation name if present
+            if (genCandidate.isFallback && genString && basePayload.masterType === 'variant') {
+              const searchUpper = genString.toUpperCase();
+              const matched = list.filter((item) => {
+                const name = String(item?.masterName || '').toUpperCase();
+                const itemGen = String(item?.vehicleGeneration || item?.generation || '').toUpperCase();
+                return itemGen === searchUpper || (searchUpper && name.includes(searchUpper));
+              });
+              if (matched.length > 0) {
+                response.data.data = matched;
+                response.data.count = matched.length;
+              }
+            }
+            return enrichMasterListResponse(response.data, requestPayload);
+          }
+        }
+      } catch (err) {
+        // Try next candidate
+      }
+    }
+  }
+
+  const finalFallbackPayload = {
+    ...basePayload,
+    customerCode: initialCustomerCode,
+    vehicleGeneration: genString || (genArray ? genArray[0] : null),
+  };
 
   // Try 2: Live Dearo Endpoint with client Authorization header
   try {
@@ -132,31 +193,31 @@ export const getMasterListService = async (payload, clientAuthHeader = null) => 
 
     const response = await axios.post(
       `${DEARO_API_BASE_URL}getMasterList`,
-      requestPayload,
+      finalFallbackPayload,
       { headers, timeout: 15000 }
     );
     if (response.data && response.data.success !== false) {
-      return enrichMasterListResponse(response.data, requestPayload);
+      return enrichMasterListResponse(response.data, finalFallbackPayload);
     }
   } catch (err) {
-    logger.warn('Dearo Catalog API getMasterList error:', err.response?.data || err.message);
+    logger.warn('Dearo Catalog API getMasterList error:', err.response?.data?.message || err.message);
   }
 
   // Try 3: UAT Dearo Endpoint
   try {
     const response = await axios.post(
       `${UAT_DEARO_API_BASE_URL}getMasterList`,
-      requestPayload,
+      finalFallbackPayload,
       {
         headers: { 'Content-Type': 'application/json' },
         timeout: 15000,
       }
     );
     if (response.data && response.data.success !== false) {
-      return enrichMasterListResponse(response.data, requestPayload);
+      return enrichMasterListResponse(response.data, finalFallbackPayload);
     }
   } catch (err) {
-    logger.warn('UAT Dearo Catalog API getMasterList error:', err.response?.data || err.message);
+    logger.warn('UAT Dearo Catalog API getMasterList error:', err.response?.data?.message || err.message);
   }
 
   return {
@@ -171,42 +232,86 @@ export const getMasterListService = async (payload, clientAuthHeader = null) => 
  * Call Partsmart / Dearo External Parts List API
  */
 export const getPartsListService = async (payload, clientAuthHeader = null) => {
-  const requestPayload = {
-    aggregate: formatArrayField(payload?.aggregate),
-    brand: formatArrayField(payload?.brand),
-    customerCode: payload?.customerCode || '050',
+  const rawGeneration =
+    payload?.vehicleGeneration ||
+    payload?.generation ||
+    payload?.generations ||
+    payload?.vehicleGenerations ||
+    payload?.vehicle_generation;
+
+  const initialCustomerCode = payload?.customerCode || '050';
+  const alternateCustomerCode = initialCustomerCode === '050' ? '0046' : '050';
+
+  const basePayload = {
+    customerCode: formatArrayField(payload?.customerCode || payload?.customerCodes || payload?.customerCodes),
+    aggregate: formatArrayField(payload?.aggregate || payload?.category || payload?.categories || payload?.aggregates),
+    brand: formatArrayField(payload?.brand || payload?.brands || payload?.brandName || payload?.brandsName),
     fieldOrder: payload?.fieldOrder || null,
     fuelType: formatArrayField(payload?.fuelType),
     limit: payload?.limit !== undefined && payload?.limit !== null ? Number(payload.limit) : 0,
-    make: formatArrayField(payload?.make),
-    model: formatArrayField(payload?.model),
+    make: formatArrayField(payload?.make || payload?.makes || payload?.makeName || payload?.makesName),
+    model: formatArrayField(payload?.model || payload?.models || payload?.modelName || payload?.modelsName),
     offset: payload?.offset !== undefined && payload?.offset !== null ? Number(payload.offset) : 0,
     partNumber: payload?.partNumber ? String(payload.partNumber).trim() : null,
     primary: payload?.primary !== undefined ? payload.primary : false,
     sortOrder: payload?.sortOrder || 'ASC',
-    subAggregate: formatArrayField(payload?.subAggregate),
+    subAggregate: formatArrayField(payload?.subAggregate || payload?.subCategory || payload?.subCategories || payload?.subAggregates),
     variant: formatArrayField(payload?.variant),
     year: formatArrayField(payload?.year),
-    vehicleGeneration: payload?.vehicleGeneration ? String(payload.vehicleGeneration).trim() : null,
   };
 
-  // Try 1: External Partsmart API with Basic Auth
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}getPartsList`,
-      requestPayload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: getBasicAuthHeader(),
-        },
-        timeout: 15000,
-      }
-    );
-    if (response.data && response.data.success !== false) return response.data;
-  } catch (err) {
-    logger.warn('Partsmart getPartsList error:', err.response?.data || err.message);
+  const genArray = formatArrayField(rawGeneration);
+  const genString = rawGeneration
+    ? String(Array.isArray(rawGeneration) ? rawGeneration[0] : rawGeneration).trim()
+    : null;
+
+  const candidateGenerations = [];
+  if (genArray) {
+    candidateGenerations.push(genArray);
+    candidateGenerations.push(genString);
+    candidateGenerations.push(null);
+  } else {
+    candidateGenerations.push(null);
   }
+
+  const customerCodes = [initialCustomerCode, alternateCustomerCode];
+
+  // Try 1: External Partsmart API with Basic Auth
+  for (const genVal of candidateGenerations) {
+    for (const cCode of customerCodes) {
+      const requestPayload = {
+        ...basePayload,
+        customerCode: cCode,
+        vehicleGeneration: genVal,
+      };
+
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}getPartsList`,
+          requestPayload,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: getBasicAuthHeader(),
+            },
+            timeout: 15000,
+          }
+        );
+        if (response.data && response.data.success !== false) {
+          const list = Array.isArray(response.data.data) ? response.data.data : [];
+          if (list.length > 0) return response.data;
+        }
+      } catch (err) {
+        // Try next candidate
+      }
+    }
+  }
+
+  const finalFallbackPayload = {
+    ...basePayload,
+    customerCode: initialCustomerCode,
+    vehicleGeneration: genString || (genArray ? genArray[0] : null),
+  };
 
   // Try 2: Live Dearo Endpoint with client Authorization header
   try {
@@ -215,19 +320,19 @@ export const getPartsListService = async (payload, clientAuthHeader = null) => {
 
     const response = await axios.post(
       `${DEARO_API_BASE_URL}getPartsList`,
-      requestPayload,
+      finalFallbackPayload,
       { headers, timeout: 15000 }
     );
     if (response.data && response.data.success !== false) return response.data;
   } catch (err) {
-    logger.warn('Dearo getPartsList error:', err.response?.data || err.message);
+    logger.warn('Dearo getPartsList error:', err.response?.data?.message || err.message);
   }
 
   // Try 3: UAT Dearo Endpoint
   try {
     const response = await axios.post(
       `${UAT_DEARO_API_BASE_URL}getPartsList`,
-      requestPayload,
+      finalFallbackPayload,
       {
         headers: { 'Content-Type': 'application/json' },
         timeout: 15000,
@@ -235,7 +340,7 @@ export const getPartsListService = async (payload, clientAuthHeader = null) => {
     );
     if (response.data && response.data.success !== false) return response.data;
   } catch (err) {
-    logger.warn('UAT Dearo getPartsList error:', err.response?.data || err.message);
+    logger.warn('UAT Dearo getPartsList error:', err.response?.data?.message || err.message);
   }
 
   return {
@@ -407,7 +512,7 @@ export const createTop20CarService = async (data) => {
 };
 
 /**
- * Direct Order Enquiry JWT Token Authentication with In-Memory Caching
+ * Direct Order Enquiry JWT Token Authentication with In-Memory Caching (Partsmart B2B)
  */
 export const getOrderToken = async (forceLogin = false) => {
   const now = new Date();
@@ -446,7 +551,7 @@ export const getOrderToken = async (forceLogin = false) => {
   return cachedOrderToken;
 };
 
-export const callOrderApi = async (endpoint, payload, method = 'post') => {
+export const callPartsmartDirectOrderApi = async (endpoint, payload, method = 'post') => {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
 
   const executeRequest = async (token) => {
@@ -484,24 +589,392 @@ export const callOrderApi = async (endpoint, payload, method = 'post') => {
   }
 };
 
-export const createDirectEnquiryOrderService = async (payload, userId, workshopId) => {
-  const response = await callOrderApi('/psm/direct-enquiry-order/create', payload);
+/**
+ * DearO Direct Enquiry API Integration
+ *
+ * Environment Endpoints:
+ * - Live: https://api.dearo.in/api/jobCards/partsmart/order/direct-enquiry/...
+ * - UAT:  https://uatws.dearo.in/api/jobCards/partsmart/order/direct-enquiry/...
+ */
+const normalizeDearoBase = (url, fallback) => {
+  if (!url) return fallback;
+  const trimmed = String(url).trim().replace(/\/+$/, '');
+  return trimmed.replace(/\/jobCards\/partsmart\/?$/, '');
+};
 
-  if (response?.success && response?.enquiry_no) {
-    if (db.partsmartOrderEnquiries) {
+const LIVE_DEARO_BASE = normalizeDearoBase(
+  process.env.DEARO_API_URL || process.env.DEARO_API_BASE_URL,
+  'https://api.dearo.in/api'
+);
+const UAT_DEARO_BASE = normalizeDearoBase(
+  process.env.UAT_DEARO_API_URL || process.env.UAT_DEARO_API_BASE_URL,
+  'https://uatws.dearo.in/api'
+);
+
+export const callDearoDirectEnquiryApi = async (
+  endpoint,
+  payload = {},
+  method = 'POST',
+  clientAuthHeader = null,
+  dearoTokenOverride = null
+) => {
+  let cleanEndpoint = String(endpoint || '').trim();
+  if (!cleanEndpoint.startsWith('/')) cleanEndpoint = `/${cleanEndpoint}`;
+  if (!cleanEndpoint.startsWith('/jobCards/partsmart')) {
+    cleanEndpoint = `/jobCards/partsmart${cleanEndpoint}`;
+  }
+
+  // Determine DearO token:
+  // 1. Explicit override passed in
+  // 2. process.env.DEARO_ACCESS_TOKEN
+  // 3. Client auth header if it is an opaque DearO token (not starting with 'Bearer ey')
+  let dearoToken =
+    dearoTokenOverride ||
+    process.env.DEARO_ACCESS_TOKEN ||
+    process.env.DEARO_TOKEN ||
+    null;
+
+  if (!dearoToken && clientAuthHeader) {
+    const trimmed = String(clientAuthHeader).trim();
+    if (!trimmed.startsWith('Bearer ey') && !trimmed.startsWith('ey')) {
+      dearoToken = trimmed.replace(/^Bearer\s+/i, '');
+    }
+  }
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (dearoToken) {
+    headers['Authorization'] = dearoToken;
+  }
+
+  const isLive = process.env.NODE_ENV === 'production' || process.env.USE_LIVE_DEARO === 'true';
+  const primaryBase = isLive ? LIVE_DEARO_BASE : UAT_DEARO_BASE;
+  const secondaryBase = isLive ? UAT_DEARO_BASE : LIVE_DEARO_BASE;
+
+  const tryRequest = async (baseUrl) => {
+    const url = `${baseUrl}${cleanEndpoint}`;
+    const options = {
+      method: method.toUpperCase(),
+      url,
+      headers: { ...headers },
+      timeout: 30000,
+    };
+
+    if (options.method === 'GET') {
+      options.params = { ...(payload || {}) };
+    } else {
+      options.data = payload;
+      options.params = {};
+    }
+
+    if (dearoToken && !options.params.access_token) {
+      options.params.access_token = dearoToken;
+    }
+
+    const response = await axios(options);
+    return response.data;
+  };
+
+  const formatErr = (err) => {
+    const status = err.response?.status || 'NO_STATUS';
+    const data = err.response?.data;
+    const msg = data?.error?.message || data?.message || err.message;
+    return `Status ${status} - ${msg} | Details: ${JSON.stringify(data || {})}`;
+  };
+
+  try {
+    return await tryRequest(primaryBase);
+  } catch (primaryErr) {
+    logger.warn(
+      `DearO Direct Enquiry Primary API (${primaryBase}${cleanEndpoint}) error: ${formatErr(primaryErr)} | Payload: ${JSON.stringify(payload)}`
+    );
+
+    try {
+      return await tryRequest(secondaryBase);
+    } catch (secondaryErr) {
+      logger.warn(
+        `DearO Direct Enquiry Secondary API (${secondaryBase}${cleanEndpoint}) error: ${formatErr(secondaryErr)} | Payload: ${JSON.stringify(payload)}`
+      );
+
+      throw secondaryErr;
+    }
+  }
+};
+
+/**
+ * 1. Place Order (Direct Enquiry Create)
+ */
+export const createDirectEnquiryOrderService = async (payload, userId = null, clientAuthHeader = null) => {
+  let workshopId = String(payload.workshopId || payload.workshop_id || '').trim();
+  let customerCode = String(payload.customer_code || payload.customerCode || '').trim();
+
+  // If workshopId or customerCode is missing, lookup from database user profile
+    if (!customerCode || customerCode === '050' || customerCode === '0046') {
+    if (userId) {
+      try {
+        const userRecord = await db.users.findOne({ where: { id: userId } });
+        if (userRecord?.customer_account_id && userRecord.customer_account_id !== 'KAHD') {
+          customerCode = String(userRecord.customer_account_id).trim();
+        }
+      } catch (uErr) {
+        logger.warn(`Direct Enquiry user lookup error: ${uErr.message}`);
+      }
+    }
+    if (!customerCode || customerCode === '050' || customerCode === '0046') {
+      customerCode = 'NMSA0786';
+    }
+  }
+
+  if (!customerCode) {
+    return {
+      error: {
+        statusCode: 400,
+        name: 'Error',
+        message: 'customer_code is required',
+      },
+    };
+  }
+
+  const rawParts = Array.isArray(payload.parts) ? payload.parts : [];
+  const parts = rawParts
+    .filter((p) => p && (p.part_no || p.partNo || p.partNumber))
+    .map((p) => ({
+      part_no: String(p.part_no || p.partNo || p.partNumber).trim(),
+      qty: Number(p.qty || p.quantity || 1),
+    }));
+
+  if (parts.length === 0) {
+    return {
+      error: {
+        statusCode: 400,
+        name: 'Error',
+        message: 'parts must contain at least one part, customer_code is required',
+      },
+    };
+  }
+
+  const requestPayload = {
+    workshopId,
+    customer_code: customerCode,
+    source: payload.source || 'GOL',
+    channel: payload.channel || 'B2B-API',
+    reference_no: payload.reference_no || payload.referenceNo || '',
+    vehicle_no: payload.vehicle_no || payload.vehicleNo || '',
+    parts,
+  };
+
+  let response = null;
+
+  // 1. First attempt: DearO Direct Enquiry endpoint
+  try {
+    response = await callDearoDirectEnquiryApi(
+      '/jobCards/partsmart/order/direct-enquiry/create',
+      requestPayload,
+      'POST',
+      clientAuthHeader,
+      payload.dearo_token || payload.dearoToken
+    );
+  } catch (dearoErr) {
+    logger.warn('DearO API call failed, falling back to Partsmart Direct Order API:', dearoErr.message);
+  }
+
+  // 2. Second attempt: Fallback to upstream Partsmart Direct Order API
+  if (!response?.success || !response?.enquiry_no) {
+    try {
+      logger.info('Calling Partsmart Direct Order API directly (/psm/direct-enquiry-order/create)...');
+      const psmResponse = await callPartsmartDirectOrderApi(
+        '/psm/direct-enquiry-order/create',
+        requestPayload,
+        'POST'
+      );
+      if (psmResponse?.success && (psmResponse?.enquiry_no || psmResponse?.data?.enquiry_no)) {
+        response = {
+          success: true,
+          enquiry_no: psmResponse?.enquiry_no || psmResponse?.data?.enquiry_no,
+          stored: true,
+          workshopId,
+          orderCreationDate: new Date().toISOString(),
+          ...psmResponse,
+        };
+      } else if (psmResponse) {
+        response = psmResponse;
+      }
+    } catch (psmErr) {
+      logger.error('Partsmart Direct Order API error:', psmErr.response?.data || psmErr.message);
+      if (!response) {
+        return {
+          error: {
+            statusCode: psmErr.response?.status || 500,
+            name: 'Error',
+            message: psmErr.response?.data?.message || psmErr.message || 'Failed to create order enquiry',
+          },
+        };
+      }
+    }
+  }
+
+  const enquiryNo = response?.enquiry_no || response?.enquiryNo || response?.data?.enquiry_no;
+  if (response?.success && enquiryNo && db.partsmartOrderEnquiries) {
+    try {
       await db.partsmartOrderEnquiries.create({
-        enquiryNo: response.enquiry_no,
-        workshopId: workshopId || '',
-        customerCode: payload.customer_code || '050',
-        referenceNo: payload.reference_no || '',
-        source: payload.source || 'dearo',
-        channel: payload.channel || 'B2B-API',
-        vehicleNo: payload.vehicle_no || '',
-        parts: payload.parts || [],
+        enquiryNo,
+        workshopId,
+        customerCode,
+        referenceNo: requestPayload.reference_no,
+        source: requestPayload.source,
+        channel: requestPayload.channel,
+        vehicleNo: requestPayload.vehicle_no,
+        parts,
         status: 'PROCESSING',
+        message: 'Order enquiry accepted and processing',
         createResponse: response,
         createdBy: userId ? String(userId) : '',
       });
+    } catch (dbErr) {
+      logger.warn('Failed to store direct enquiry order in local db:', dbErr.message);
+    }
+  }
+
+  return response;
+};
+
+/**
+ * 2. Order List (Direct Enquiry List)
+ */
+export const getDirectEnquiryOrderListService = async (workshopId, clientAuthHeader = null, userId = null) => {
+  const wId = workshopId ? String(workshopId).trim() : '';
+  const queryParams = wId ? { workshopId: wId } : {};
+
+  let upstreamResponse = null;
+  try {
+    upstreamResponse = await callDearoDirectEnquiryApi(
+      '/jobCards/partsmart/order/direct-enquiry/list',
+      queryParams,
+      'GET',
+      clientAuthHeader
+    );
+  } catch (err) {
+    logger.warn('Direct enquiry list API error, falling back to local database:', err.message);
+  }
+
+  if (upstreamResponse?.success && Array.isArray(upstreamResponse?.data) && upstreamResponse.data.length > 0) {
+    return upstreamResponse;
+  }
+
+  // Fallback to local DB records
+  if (db.partsmartOrderEnquiries) {
+    const whereClause = {};
+    if (wId) whereClause.workshopId = wId;
+    else if (userId) whereClause.createdBy = String(userId);
+
+    const localRecords = await db.partsmartOrderEnquiries.findAll({
+      where: whereClause,
+      order: [['createdAt', 'DESC']],
+    });
+
+    const formattedData = localRecords.map((r) => ({
+      id: r.id,
+      enquiryNo: r.enquiryNo,
+      workshopId: r.workshopId,
+      customerCode: r.customerCode,
+      referenceNo: r.referenceNo,
+      source: r.source || 'GOL',
+      channel: r.channel || 'B2B-API',
+      vehicleNo: r.vehicleNo,
+      parts: r.parts || [],
+      status: r.status || 'PROCESSING',
+      message: r.message || 'Order enquiry accepted and processing',
+      orderNos: r.orderNos || [],
+      partnerOrders: [],
+      createResponse: r.createResponse || { success: true, enquiry_no: r.enquiryNo },
+      orderCreationDate: r.createdAt,
+      createdBy: r.createdBy,
+      createdOn: r.createdAt,
+      updatedOn: r.updatedAt,
+    }));
+
+    return {
+      success: true,
+      type: 'WORKSHOP',
+      count: formattedData.length,
+      workshopId: wId,
+      data: formattedData,
+    };
+  }
+
+  return upstreamResponse || {
+    success: true,
+    type: 'WORKSHOP',
+    count: 0,
+    workshopId: wId,
+    data: [],
+  };
+};
+
+/**
+ * 3. Order Status (Real-time Enquiry Tracking)
+ */
+export const getDirectEnquiryOrderStatusService = async (payload, clientAuthHeader = null) => {
+  const enquiryNo = payload.enquiry_no || payload.enquiryNo;
+  const referenceNo = payload.reference_no || payload.referenceNo;
+  const source = payload.source || 'GOL';
+
+  if (!enquiryNo && !referenceNo) {
+    return {
+      error: {
+        statusCode: 400,
+        name: 'Error',
+        message: 'enquiry_no or reference_no is required',
+      },
+    };
+  }
+
+  const requestPayload = {};
+  if (enquiryNo) requestPayload.enquiry_no = enquiryNo;
+  if (referenceNo) {
+    requestPayload.reference_no = referenceNo;
+    requestPayload.source = source;
+  }
+
+  let response = null;
+  try {
+    response = await callDearoDirectEnquiryApi(
+      '/jobCards/partsmart/order/direct-enquiry/status',
+      requestPayload,
+      'POST',
+      clientAuthHeader,
+      payload.dearo_token || payload.dearoToken
+    );
+  } catch (dearoErr) {
+    logger.warn('DearO status API failed, falling back to Partsmart Direct Order Status API:', dearoErr.message);
+  }
+
+  if (!response?.success) {
+    try {
+      response = await callPartsmartDirectOrderApi(
+        '/psm/direct-enquiry-order/status',
+        requestPayload,
+        'POST'
+      );
+    } catch (psmErr) {
+      logger.error('Partsmart Direct Order status error:', psmErr.response?.data || psmErr.message);
+    }
+  }
+
+  // Update status in local database if present
+  if (response?.success && response?.enquiry_no && db.partsmartOrderEnquiries) {
+    try {
+      await db.partsmartOrderEnquiries.update(
+        {
+          status: response.status || 'PROCESSING',
+          message: response.message || null,
+          orderNos: response.order_nos || response.orderNos || [],
+        },
+        {
+          where: { enquiryNo: response.enquiry_no },
+        }
+      );
+    } catch (dbErr) {
+      logger.warn('Failed to update direct enquiry order status in local db:', dbErr.message);
     }
   }
 
@@ -509,15 +982,11 @@ export const createDirectEnquiryOrderService = async (payload, userId, workshopI
 };
 
 export const getOrdersService = async (workshopId, userId) => {
-  if (!db.partsmartOrderEnquiries) return [];
-  const whereClause = {};
-  if (workshopId) whereClause.workshopId = String(workshopId);
-  if (userId) whereClause.createdBy = String(userId);
+  return await getDirectEnquiryOrderListService(workshopId, null, userId);
+};
 
-  return await db.partsmartOrderEnquiries.findAll({
-    where: whereClause,
-    order: [['createdAt', 'DESC']],
-  });
+export const callOrderApi = async (endpoint, payload, method = 'post') => {
+  return await callPartsmartDirectOrderApi(endpoint, payload, method);
 };
 
 /**
@@ -768,50 +1237,89 @@ export const getLubesProductsService = async (queryParams = {}, clientAuthHeader
 /**
  * Service for Bulk CSV Upload of Lubes Products
  */
-export const uploadLubesProductsService = async (fileBuffer, fileName, userId = null) => {
+export const uploadLubesProductsService = async (fileBuffer, fileName = '', userId = null) => {
   if (!fileBuffer) {
-    throw new Error('CSV file buffer is required');
+    throw new Error('File buffer is required');
   }
 
-  const fileContent = fileBuffer.toString('utf8').replace(/^\uFEFF/, '');
-  const lines = fileContent.split(/\r?\n/).filter((line) => line.trim() !== '');
+  const rowsData = [];
+  const lowerFileName = String(fileName || '').toLowerCase();
+  const isExcel = lowerFileName.endsWith('.xlsx') || lowerFileName.endsWith('.xls') || (fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4b);
 
-  if (lines.length === 0) {
-    return { fileName, totalRows: 0, processed: 0, inserted: 0, updated: 0, skipped: 0, errors: [] };
-  }
+  if (isExcel) {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(fileBuffer);
+    const worksheet = workbook.worksheets[0];
+    if (worksheet) {
+      const headers = [];
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) {
+          row.eachCell((cell, colNumber) => {
+            headers[colNumber] = String(cell.value || '').trim();
+          });
+        } else {
+          const rowObj = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headers[colNumber];
+            if (header) {
+              let val = cell.value;
+              if (val && typeof val === 'object' && val.text) val = val.text;
+              if (val && typeof val === 'object' && val.result !== undefined) val = val.result;
+              rowObj[header] = val !== null && val !== undefined ? String(val).trim() : '';
+            }
+          });
+          rowsData.push({ rowNumber, rowObj });
+        }
+      });
+    }
+  } else {
+    const fileContent = fileBuffer.toString('utf8').replace(/^\uFEFF/, '');
+    const lines = fileContent.split(/\r?\n/).filter((line) => line.trim() !== '');
 
-  const parseCsvLine = (text) => {
-    const result = [];
-    let cur = '';
-    let inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      if (c === '"') {
-        inQuotes = !inQuotes;
-      } else if (c === ',' && !inQuotes) {
+    if (lines.length > 0) {
+      const parseCsvLine = (text) => {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+          const c = text[i];
+          if (c === '"') {
+            inQuotes = !inQuotes;
+          } else if (c === ',' && !inQuotes) {
+            result.push(cur.trim().replace(/^"|"$/g, ''));
+            cur = '';
+          } else {
+            cur += c;
+          }
+        }
         result.push(cur.trim().replace(/^"|"$/g, ''));
-        cur = '';
-      } else {
-        cur += c;
+        return result;
+      };
+
+      const rawHeaders = parseCsvLine(lines[0]);
+      const headers = rawHeaders.map((h) => h.trim());
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCsvLine(lines[i]);
+        const rowObj = {};
+        headers.forEach((h, idx) => {
+          rowObj[h] = values[idx] !== undefined ? values[idx] : '';
+        });
+        rowsData.push({ rowNumber: i + 1, rowObj });
       }
     }
-    result.push(cur.trim().replace(/^"|"$/g, ''));
-    return result;
-  };
+  }
 
-  const rawHeaders = parseCsvLine(lines[0]);
-  const headers = rawHeaders.map((h) => h.trim());
+  if (rowsData.length === 0) {
+    return { fileName, totalRows: 0, processed: 0, inserted: 0, updated: 0, skipped: 0, errors: [] };
+  }
 
   let inserted = 0, updated = 0, skipped = 0;
   const errors = [];
   const typeWiseCount = {};
 
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCsvLine(lines[i]);
-    const rowObj = {};
-    headers.forEach((h, idx) => {
-      rowObj[h] = values[idx] !== undefined ? values[idx] : '';
-    });
+  for (const item of rowsData) {
+    const { rowNumber, rowObj } = item;
 
     const getVal = (...keys) => {
       for (const k of keys) {
@@ -829,19 +1337,19 @@ export const uploadLubesProductsService = async (fileBuffer, fileName, userId = 
 
     if (!type || !partNumber) {
       skipped++;
-      errors.push({ row: i + 1, type: rawType || '', partNumber: partNumber || '', message: 'type and partNumber are required' });
+      errors.push({ row: rowNumber, type: rawType || '', partNumber: partNumber || '', message: 'type and partNumber are required' });
       continue;
     }
 
     const productData = {
       type,
-      partNumber,
-      category: getVal('category', 'product category') || '',
-      grade: getVal('grade', 'oil grade') || '',
-      colour: getVal('colour', 'color') || '',
-      pack: getVal('pack', 'pack size', 'packSize', 'packing') || '',
-      ratio: getVal('ratio', 'mixing ratio') || '',
-      description: getVal('description', 'product description', 'productDescription', 'part description') || '',
+      partNumber: partNumber.slice(0, 100),
+      category: String(getVal('category', 'product category') || '').trim().slice(0, 100),
+      grade: String(getVal('grade', 'oil grade') || '').trim().slice(0, 100),
+      colour: String(getVal('colour', 'color') || '').trim().slice(0, 50),
+      pack: String(getVal('pack', 'pack size', 'packSize', 'packing') || '').trim().slice(0, 50),
+      ratio: String(getVal('ratio', 'mixing ratio') || '').trim().slice(0, 50),
+      description: String(getVal('description', 'product description', 'productDescription', 'part description') || '').trim().slice(0, 255),
       mrp: Number(getVal('mrp', 'maximum retail price') || 0),
       sellingPriceWithGst: Number(getVal('sellingPriceWithGst', 'selling price with gst', 'selling with gst', 'sellingPriceIncludingGst') || 0),
       sellingPriceWithoutGst: Number(getVal('sellingPriceWithoutGst', 'selling price without gst', 'selling w/o gst', 'selling excluding gst') || 0),
@@ -854,6 +1362,9 @@ export const uploadLubesProductsService = async (fileBuffer, fileName, userId = 
     };
 
     try {
+      if (db.sequelize) {
+        await db.sequelize.query('ALTER TABLE lubes_products MODIFY COLUMN ratio VARCHAR(100) NULL;').catch(() => {});
+      }
       const existing = await db.lubesProducts.findOne({ where: { type, partNumber } });
       if (existing) {
         await existing.update(productData);
@@ -865,13 +1376,13 @@ export const uploadLubesProductsService = async (fileBuffer, fileName, userId = 
       typeWiseCount[type] = (typeWiseCount[type] || 0) + 1;
     } catch (err) {
       skipped++;
-      errors.push({ row: i + 1, type, partNumber, message: err.message });
+      errors.push({ row: rowNumber, type, partNumber, message: err.message });
     }
   }
 
   return {
     fileName,
-    totalRows: lines.length - 1,
+    totalRows: rowsData.length,
     processed: inserted + updated,
     inserted,
     updated,
@@ -903,13 +1414,13 @@ export const seedLubesProductsService = async (items = [], userId = null) => {
 
     const productData = {
       type,
-      partNumber,
-      category: item.category || '',
-      grade: item.grade || '',
-      colour: item.colour || item.color || '',
-      pack: item.pack || item.packSize || '',
-      ratio: item.ratio || '',
-      description: item.description || '',
+      partNumber: partNumber.slice(0, 100),
+      category: String(item.category || '').trim().slice(0, 100),
+      grade: String(item.grade || '').trim().slice(0, 100),
+      colour: String(item.colour || item.color || '').trim().slice(0, 50),
+      pack: String(item.pack || item.packSize || '').trim().slice(0, 50),
+      ratio: String(item.ratio || '').trim().slice(0, 50),
+      description: String(item.description || '').trim().slice(0, 255),
       mrp: Number(item.mrp || 0),
       sellingPriceWithGst: Number(item.sellingPriceWithGst || 0),
       sellingPriceWithoutGst: Number(item.sellingPriceWithoutGst || 0),
@@ -1067,6 +1578,9 @@ export default {
   getTop20CarsService,
   createTop20CarService,
   createDirectEnquiryOrderService,
+  getDirectEnquiryOrderListService,
+  getDirectEnquiryOrderStatusService,
+  callDearoDirectEnquiryApi,
   getOrdersService,
   callOrderApi,
   resolveVehicleService,
