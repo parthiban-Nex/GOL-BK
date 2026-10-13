@@ -237,149 +237,191 @@ const validateGrnUploads = async (req, user, files) => {
   let result = '';
   let exceptionData = [];
   let successData = 0;
-  let actualHeaders = {};
+  let actualHeaders = [];
+
+   // Every column that must exist in the uploaded sheet (matches grnupload.xlsx)
   const requiredHeaders = [
-    'SL No', 'Branch', 'GRN No', 'GRN Date',"Supplier Name","Supplier Invoice Date",'Item Code', 'Item Name',
-    'UOM', 'Location', 'Qty', 'Unit Cost', 'MRP', 'Unit Sale Rate',"Discount",
-    // 'CGST', 'SGST', 'IGST',
-     'Value', 
-    //  'Parts Category', 'Make', 'Model',
-    // 'Parts Aggregate', 
-    'HSN', 'DMS ID'
+    'SL No',
+    // 'Branch', // TODO: enable in future when Branch column is added to the template
+    'Supplier Name',
+    'Supplier Invoice Date',
+    'Invoice Date',
+    'Esugam No',
+    'LR No',
+    'LR Date',
+    'Transport Name',
+    'Freight Charges',
+    'Mis Charges',
+    'Item Code',
+    'Item Name',
+    'UOM',
+    'Location', // Bin location
+    'Qty',
+    'Unit Cost',
+    'MRP',
+    'Total GST %',
+    'Unit Sale Rate',
+    'Discount',
+    'HSN',
+    // 'Po Number' is in the template but optional, so it is not required here
   ];
+
+  // Cells that must have a value in every row
+  const requiredFields = [
+    // 'Branch', // TODO: enable in future
+    'Supplier Name',
+    'Supplier Invoice Date',
+    'Item Code',
+    'Item Name',
+    'Location', // Bin location is mandatory
+    'Qty',
+    'Unit Cost',
+    'MRP',
+    'Total GST %',
+    'Unit Sale Rate',
+  ];
+
+  // Must be a valid number when filled (blank is allowed unless also in requiredFields)
+  const numericFields = [
+    'Qty',
+    'Unit Cost',
+    'MRP',
+    'Total GST %',
+    'Unit Sale Rate',
+    'Discount',
+    'Freight Charges',
+    'Mis Charges',
+  ];
+
+  // Must be a valid date when filled (Excel serial number or date string)
+  const dateFields = ['Supplier Invoice Date', 'Invoice Date', 'LR Date'];
 
   try {
     if (req.file && req.file.buffer) {
-      const fileBuffer = req.file.buffer;
-      const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
-
+      const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
 
-      // Validate Headers
-       actualHeaders = Object.keys(sheetData[0] || {});
-      const missingHeaders = requiredHeaders.filter(header => !actualHeaders.includes(header));
+      if (sheetData.length === 0) {
+        return {
+          result: 'failed',
+          exceptionData: [],
+          successData: 0,
+          actualHeaders,
+          message: 'The uploaded file has no data rows.',
+        };
+      }
+
+      // Validate headers (trim to avoid trailing-space mismatches)
+      actualHeaders = Object.keys(sheetData[0]).map(h => String(h).trim());
+      const missingHeaders = requiredHeaders.filter(h => !actualHeaders.includes(h));
 
       if (missingHeaders.length > 0) {
         return {
           result: 'failed',
           exceptionData: [],
           successData: 0,
-          message: `Missing required columns: ${missingHeaders.join(', ')}`
+          actualHeaders,
+          message: `Missing required columns: ${missingHeaders.join(', ')}`,
         };
       }
 
-      //  Check for duplicate DMS ID
-      const dmsIdSet = new Set();
-      const uniqueSheetData = sheetData.filter((element, index) => {
-        const docId = element['DMS ID'];
+      const isEmpty = val =>
+        val === undefined ||
+        val === null ||
+        String(val).trim() === '' ||
+        String(val).trim().toLowerCase() === 'null' ||
+        String(val).trim().toLowerCase() === 'undefined';
 
-        if (typeof docId === 'number' || typeof docId === 'string') {
-          const normalized = String(docId).trim();
-          if (dmsIdSet.has(normalized)) {
-            element['Message'] = `Row ${index + 2}: Duplicate DMS ID`;
-            exceptionData.push(element);
-            return false;
-          } else {
-            dmsIdSet.add(normalized);
-            return true;
-          }
-        }
+      const normalize = val => String(val).trim().toUpperCase();
 
-        return false;
-      });
+      const isValidNumber = val => {
+        if (typeof val === 'number') return Number.isFinite(val);
+        const n = Number(String(val).replace(/,/g, '').trim());
+        return Number.isFinite(n);
+      };
 
-      if (exceptionData.length > 0) {
-        return { result: 'failed', exceptionData, successData };
-      }
-      const isEmpty = val => val === undefined || val === null || val === '' || val === 'null' || val === 'undefined';
+      const isValidDate = val => {
+        if (typeof val === 'number') return val > 0; // Excel serial date
+        if (val instanceof Date) return !Number.isNaN(val.getTime());
+        return !Number.isNaN(Date.parse(String(val)));
+      };
 
-      const requiredFields = [
-        'Branch', 'Item Code', 'Item Name', 'Qty', 'Unit Cost', 'MRP', 'Unit Sale Rate',
-        'Value', 'DMS ID'
+      // ---- Item master lookup (chunked) ----
+      const itemCodes = [
+        ...new Set(
+          sheetData
+            .filter(row => !isEmpty(row['Item Code']))
+            .map(row => normalize(row['Item Code']))
+        ),
       ];
-const normalize = val =>
-  String(val)
-    .trim()
-    .toUpperCase();
-    const itemCodes = [...new Set(
-  uniqueSheetData
-    .filter(row => !isEmpty(row["Item Code"]))
-    .map(i => normalize(i["Item Code"]))
-)];
-             const chunkSize = 1000;
-let items = [];
 
-for (let i = 0; i < itemCodes.length; i += chunkSize) {
-  const chunk = itemCodes.slice(i, i + chunkSize);
+      const chunkSize = 1000;
+      const items = [];
 
-  const chunkItems = await Item.findAll({
-    where: { itemCode: { [Op.in]: chunk } },
-    attributes: ['id', 'itemCode']
-  });
-
-  items.push(...chunkItems);
-
-}
-
-const itemCodeSet = new Set(
-  items.map(item => normalize(item.itemCode))
-);
-       let notfoundItems = itemCodes.filter(code => !itemCodeSet.has(code));
-      if (notfoundItems.length > 0) {
-           const itemCodeToRows = new Map();
-
-uniqueSheetData.forEach(row => {
-  const code = normalize(row["Item Code"]);
-  if (!itemCodeToRows.has(code)) {
-    itemCodeToRows.set(code, []);
-  }
-  itemCodeToRows.get(code).push(row);
-});
-notfoundItems.forEach(code => {
-  const rows = itemCodeToRows.get(code) || [];
-  rows.forEach(row => {
-    row['item error'] = `Item not found for Item Code: ${code}`;
-    exceptionData.push(row);
-  });
-});
+      for (let i = 0; i < itemCodes.length; i += chunkSize) {
+        const chunk = itemCodes.slice(i, i + chunkSize);
+        const chunkItems = await Item.findAll({
+          where: { itemCode: { [Op.in]: chunk } },
+          attributes: ['id', 'itemCode'],
+        });
+        items.push(...chunkItems);
       }
 
-             
-      //  row-wise validations
-      for (let index = 0; index < uniqueSheetData.length; index++) {
-        const element = uniqueSheetData[index];
-        try {
-          let hasError = false;
-          let errorMessage = '';
-          
-           
+      const itemCodeSet = new Set(items.map(item => normalize(item.itemCode)));
 
+      // ---- Row-wise validation: one entry per failed row, all errors combined ----
+      const failedRowIndexes = new Set();
+
+      sheetData.forEach((row, index) => {
+        const errors = [];
+
+        try {
+          // Required fields
           for (const field of requiredFields) {
-            if (isEmpty(element[field])) {
-              errorMessage += `${field} is empty or invalid. `;
-              hasError = true;
+            if (isEmpty(row[field])) {
+              errors.push(`${field} is empty`);
             }
           }
 
-          if (hasError) {
-            element['Message'] = `Row ${index + 2}: ${errorMessage.trim()}`;
-            exceptionData.push(element);
-            continue;
+          // Numeric fields
+          for (const field of numericFields) {
+            if (!isEmpty(row[field]) && !isValidNumber(row[field])) {
+              errors.push(`${field} must be a number`);
+            }
           }
 
+          // Qty must be > 0
+          if (!isEmpty(row['Qty']) && isValidNumber(row['Qty']) && Number(row['Qty']) <= 0) {
+            errors.push('Qty must be greater than 0');
+          }
 
+          // Date fields
+          for (const field of dateFields) {
+            if (!isEmpty(row[field]) && !isValidDate(row[field])) {
+              errors.push(`${field} is not a valid date`);
+            }
+          }
 
-
+          // Item must exist in the item master
+          if (!isEmpty(row['Item Code']) && !itemCodeSet.has(normalize(row['Item Code']))) {
+            errors.push(`Item not found for Item Code: ${normalize(row['Item Code'])}`);
+          }
         } catch (innerError) {
-          element['Message'] = `Error processing row ${index + 2}: ${innerError.message}`;
-          exceptionData.push(element);
+          errors.push(`Error processing row: ${innerError.message}`);
         }
-      }
+
+        if (errors.length > 0) {
+          failedRowIndexes.add(index);
+          exceptionData.push({
+            ...row,
+            Message: `Row ${index + 2}: ${errors.join('; ')}`,
+          });
+        }
+      });
 
       result = exceptionData.length > 0 ? 'failed' : 'success';
-      successData = sheetData.length - exceptionData.length;
-
+      successData = sheetData.length - failedRowIndexes.size;
     } else {
       throw new Error('File not provided or invalid.');
     }
@@ -388,7 +430,7 @@ notfoundItems.forEach(code => {
     logger.error('Error in validateGrnUploads:', err);
   }
 
-  return { result, exceptionData, successData,actualHeaders };
+  return { result, exceptionData, successData, actualHeaders };
 };
 
 const validatePoUploads = async (req, user, files) => {
