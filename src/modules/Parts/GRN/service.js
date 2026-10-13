@@ -27,7 +27,7 @@ const purchaseOrderParts = db.purchaseOrderParts
 
 
 
-const generateGrnNo = async (documentType, outletCode, outletId) => {
+const generateGrnNo = async (documentType, outletCode, outletId,t=null) => {
   const prefix = documentType.split('(')[0].trim();
   const now = new Date();
   const year = now.getFullYear();
@@ -46,6 +46,8 @@ const generateGrnNo = async (documentType, outletCode, outletId) => {
           outlet_id: outletId,
         },
         order: [['id', 'DESC']],
+        transaction: t,
+    lock: t ? t.LOCK.UPDATE : undefined,
       });
 
       if (lastGrn?.grn_no) {
@@ -93,13 +95,14 @@ const BulkCreateGrn = async (body, user,t=null) => {
   const grnNo = await generateGrnNo(
     document_type,
     body.outlet_code,
-    body.outlet_id
+    body.outlet_id,
+    t
   );
   console.log(grnNo, 'grnno');
   body.createdBy = user.id;
   body.grn_no = grnNo;
   body.invoice_number=grnNo
-  
+  console.log(body,"grnbody")
   let data = {};
   try {
     data = await Grn.create(body,t ? { transaction: t } : {});

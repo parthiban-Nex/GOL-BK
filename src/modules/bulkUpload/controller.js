@@ -787,235 +787,354 @@ const uploadPincodeFile = async (req, res) => {
 };
 
 const BulkCreateGrn = async (req, res, next) => {
-        const mainTransaction = await db.sequelize.transaction();
+  const mainTransaction = await db.sequelize.transaction();
   try {
-    const fileBuffer = req.file.buffer;
-    const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
-    const [headers, ...rows] = data;
+    const [rawHeaders, ...rows] = data;
+    const headers = (rawHeaders || []).map(h => String(h).trim());
 
     if (!rows || rows.length === 0) {
-      return res.status(400).json({ message: "Empty file", requestSuccessful: false });
+      await mainTransaction.rollback();
+      return res.status(400).json({ message: 'Empty file', requestSuccessful: false });
     }
 
+    // ---------- helpers ----------
     const CHUNK_SIZE = 500;
 
     const chunkArray = (array, size) => {
       const result = [];
-      for (let i = 0; i < array.length; i += size) {
-        result.push(array.slice(i, i + size));
-      }
+      for (let i = 0; i < array.length; i += size) result.push(array.slice(i, i + size));
       return result;
     };
 
-    // STEP 1: GROUP BY OUTLET
-    const outletGroups = {};
-
-    for (const row of rows) {
-      const obj = headers.reduce((acc, key, idx) => {
+    const toObj = row =>
+      headers.reduce((acc, key, idx) => {
         acc[key] = row[idx];
         return acc;
       }, {});
 
-      const outletCode = obj["Branch"];
+    const isEmpty = v => v === undefined || v === null || String(v).trim() === '';
+    const normalize = v => String(v).trim().toUpperCase();
+    const num = v => {
+      if (isEmpty(v)) return 0;
+      const n = parseFloat(String(v).replace(/,/g, ''));
+      return Number.isFinite(n) ? n : 0;
+    };
+    const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+    const str = v => (isEmpty(v) ? null : String(v).trim());
 
-      if (!outletCode) continue;
+    // Excel serial / Date / string  ->  "YYYY-MM-DD"
+    const toDateString = v => {
+      if (isEmpty(v)) return null;
+      if (typeof v === 'number') {
+        const p = xlsx.SSF.parse_date_code(v);
+        if (!p) return null;
+        return `${p.y}-${String(p.m).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`;
+      }
+      const d = v instanceof Date ? v : new Date(v);
+      if (Number.isNaN(d.getTime())) return String(v).trim();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
 
-      if (!outletGroups[outletCode]) {
-        outletGroups[outletCode] = [];
+    // Line total = (Qty x Unit Cost) - Discount, then + GST on the taxable amount
+    const calcLine = obj => {
+      const qty = num(obj['Qty']);
+      const cost = num(obj['Unit Cost']);
+      const discount = num(obj['Discount']);
+      const gstPercent = num(obj['Total GST %']);
+
+      const taxable = round2(qty * cost - discount);
+      const gstAmount = round2((taxable * gstPercent) / 100);
+      const total = round2(taxable + gstAmount);
+
+      return { taxable, gstPercent, gstAmount, total };
+    };
+
+    // First non-empty value of a column within a group of rows
+    const firstValue = (groupRows, column) => {
+      const idx = headers.indexOf(column);
+      for (const r of groupRows) {
+        if (!isEmpty(r[idx])) return r[idx];
+      }
+      return null;
+    };
+
+    // ---------- OUTLET (single outlet: taken from the logged-in user) ----------
+    const userOutlet = req.user?.outlet;
+    if (!userOutlet?.id || !userOutlet?.outletCode) {
+      await mainTransaction.rollback();
+      return res
+        .status(400)
+        .json({ message: 'Outlet not found for the logged-in user', requestSuccessful: false });
+    }
+
+    // ---------- STEP 1: GROUP BY SUPPLIER + PO NUMBER ----------
+    // Single outlet now, so a GRN = one supplier + one PO (blank PO is its own group).
+    // FUTURE (multi-outlet): group by outlet as well, using the commented key below.
+    const groups = new Map();
+    const failedRows = [];
+
+    for (const row of rows) {
+      // skip fully blank rows
+      if (row.every(isEmpty)) continue;
+
+      const obj = toObj(row);
+
+      // FUTURE: branch based outlet mapping
+      // if (isEmpty(obj['Branch'])) continue;
+      // const outletCode = String(obj['Branch']).trim();
+
+      if (isEmpty(obj['Supplier Name'])) {
+        failedRows.push({ ...obj, 'Error Message': 'Supplier Name is empty' });
+        continue;
       }
 
-      outletGroups[outletCode].push(row);
+      const supplierName = String(obj['Supplier Name']).trim();
+      const poNumber = isEmpty(obj['Po Number']) ? '' : String(obj['Po Number']).trim();
+
+      const key = `${normalize(supplierName)}||${normalize(poNumber)}`;
+      // FUTURE: const key = `${outletCode}||${normalize(supplierName)}||${normalize(poNumber)}`;
+
+      if (!groups.has(key)) groups.set(key, { supplierName, poNumber, rows: [] });
+      // FUTURE: groups.set(key, { outletCode, supplierName, poNumber, rows: [] });
+      groups.get(key).rows.push(row);
     }
+
+    // ---------- Preload vendors (name -> { id, vendorCode }) ----------
+    const supplierNames = [...new Set([...groups.values()].map(g => g.supplierName))];
+    const vendorMap = new Map();
+
+    if (supplierNames.length > 0) {
+      const vendors = await db.vendors.findAll({
+        where: { vendorName: { [Op.in]: supplierNames } },
+        attributes: ['id', 'vendorName', 'vendorCode'],
+        transaction: mainTransaction,
+      });
+      for (const v of vendors) vendorMap.set(normalize(v.vendorName), v);
+    }
+
+    // ---------- Preload purchase orders (po_number -> { id, po_number }) ----------
+    const poNumbers = [...new Set([...groups.values()].map(g => g.poNumber).filter(Boolean))];
+    const poMap = new Map();
+
+    if (poNumbers.length > 0) {
+      
+      const purchaseOrders = await db.purchaseOrder.findAll({
+        where: { po_number: { [Op.in]: poNumbers } },
+        attributes: ['id', 'po_number'],
+        transaction: mainTransaction,
+      });
+      for (const po of purchaseOrders) poMap.set(normalize(po.po_number), po);
+    }
+
+    // FUTURE: branch based outlet lookup
+    // const outletCache = new Map();
+    // const getOutlet = async outletCode => {
+    //   if (!outletCache.has(outletCode)) {
+    //     outletCache.set(outletCode, await Outlet.findOne({ where: { outletCode } }));
+    //   }
+    //   return outletCache.get(outletCode);
+    // };
 
     const now = new Date();
     const todaydate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    let failedRows = [];
+    const createdGrns = [];
     let uniqueid = 1;
-    let createdGrns = [];
 
-    // STEP 2: PROCESS EACH OUTLET
-    for (const outletCode of Object.keys(outletGroups)) {
+    // ---------- STEP 2: PROCESS EACH GROUP ----------
+    for (const { supplierName, poNumber, rows: groupRows } of groups.values()) {
+      // FUTURE: for (const { outletCode, supplierName, poNumber, rows: groupRows } of groups.values()) {
+      //   const outlet = await getOutlet(outletCode);
+      //   if (!outlet) {
+      //     for (const row of groupRows) {
+      //       failedRows.push({ ...toObj(row), 'Error Message': `Outlet not found: ${outletCode}` });
+      //     }
+      //     continue;
+      //   }
 
-      const outlet = await Outlet.findOne({ where: { outletCode } });
+      const outlet = { id: userOutlet.id, outletCode: userOutlet.outletCode };
 
-      if (!outlet) {
-        // mark all rows failed
-        for (const row of outletGroups[outletCode]) {
-          const obj = headers.reduce((acc, key, idx) => {
-            acc[key] = row[idx];
-            return acc;
-          }, {});
-          failedRows.push({
-            ...obj,
-            "Error Message": `Outlet not found: ${outletCode}`
-          });
+      const vendor = vendorMap.get(normalize(supplierName));
+
+      if (!vendor) {
+        for (const row of groupRows) {
+          failedRows.push({ ...toObj(row), 'Error Message': `Vendor not found: ${supplierName}` });
         }
         continue;
       }
 
-      //  CREATE GRN PER OUTLET
+      // PO is optional; if a PO number is given it must exist
+      let poId = null;
+      if (poNumber) {
+        const po = poMap.get(normalize(poNumber));
+        if (!po) {
+          for (const row of groupRows) {
+            failedRows.push({ ...toObj(row), 'Error Message': `PO not found: ${poNumber}` });
+          }
+          continue;
+        }
+        poId = po.id;
+      }
+
+      // GRN header: values come from the first filled row of this group
       const grndata = {
-        document_type: "ADJ",
+        document_type: 'ADJ',
         outlet_id: outlet.id,
         outlet_code: outlet.outletCode,
-        vendor_code: "0",
-        invoice_date: todaydate,
+        vendor_id: vendor.id,
+        vendor_code: vendor.vendorCode,
+        po_id: poId,
+        invoice_date: toDateString(firstValue(groupRows, 'Invoice Date')) || todaydate,
+        e_sugam_no: str(firstValue(groupRows, 'Esugam No')),
+        lr_number: str(firstValue(groupRows, 'LR No')),
+        lr_date: toDateString(firstValue(groupRows, 'LR Date')),
+        transport_name: str(firstValue(groupRows, 'Transport Name')),
+        frieght_charges: num(firstValue(groupRows, 'Freight Charges')),
+        mis_charges: num(firstValue(groupRows, 'Mis Charges')),
         status: 2,
-        frieght_charges: 0,
-        mis_charges: 0,
       };
 
-      let GRN_data;
-
-        GRN_data = await GrnService.BulkCreateGrn(grndata, req.user, mainTransaction);
-     
+      const GRN_data = await GrnService.BulkCreateGrn(grndata, req.user, mainTransaction);
 
       let grand_total = 0;
+      let partsCreated = 0;
 
-      const rowChunks = chunkArray(outletGroups[outletCode], CHUNK_SIZE);
+      for (const chunk of chunkArray(groupRows, CHUNK_SIZE)) {
+        const grnPartsPayload = [];
+        const binPayload = [];
 
-      for (const chunk of rowChunks) {
-
-        let grnPartsPayload = [];
-        let binPayload = [];
-        const normalize = val =>
-  String(val)
-    .trim()
-    .toUpperCase();
-        const itemCodes = chunk.map(r => normalize(r[headers.indexOf("Item Code")]));
+        const itemCodes = [
+          ...new Set(
+            chunk
+              .map(r => r[headers.indexOf('Item Code')])
+              .filter(c => !isEmpty(c))
+              .map(normalize)
+          ),
+        ];
 
         const items = await Item.findAll({
           where: { itemCode: { [Op.in]: itemCodes } },
-          attributes: ['id', 'itemCode']
+          attributes: ['id', 'itemCode'],
         });
+        const itemMap = new Map(items.map(i => [normalize(i.itemCode), i]));
 
-const itemCodeSet = new Set(
-  items.map(item => normalize(item.itemCode))
-);
         for (const row of chunk) {
-          const obj = headers.reduce((acc, key, idx) => {
-            acc[key] = row[idx];
-            return acc;
-          }, {});
-
-          const item = itemCodeSet.has(normalize(obj["Item Code"]))
-            ? items.find(i => normalize(i.itemCode) === normalize(obj["Item Code"]))
-            : null;
+          const obj = toObj(row);
+          const item = itemMap.get(normalize(obj['Item Code']));
 
           if (!item?.id) {
-            failedRows.push({
-              ...obj,
-              "Error Message": `Item not found for ${obj["Item Code"]}`
-            });
-              throw new Error(`Item not found for ${obj["Item Code"]}`);
-            // continue;
+            failedRows.push({ ...obj, 'Error Message': `Item not found for ${obj['Item Code']}` });
+            continue;
           }
 
-          const total = parseFloat(obj["Value"]) || 0;
+          const { gstPercent, gstAmount, total } = calcLine(obj);
           grand_total += total;
 
           grnPartsPayload.push({
             item_id: item.id,
             item_code: item.itemCode,
-            item_description: obj["Item Name"],
-            sup_invoice_quantity: parseFloat(obj["Qty"]),
-            quantity: parseFloat(obj["Qty"]),
-            rate: parseFloat(obj["Unit Sale Rate"]),
-            cost: parseFloat(obj["Unit Cost"]),
-            mrp: parseFloat(obj["MRP"]),
-            discount: parseFloat(obj["Discount"] || 0),
+            item_description: obj['Item Name'],
+            sup_invoice_quantity: num(obj['Qty']),
+            quantity: num(obj['Qty']),
+            rate: num(obj['Unit Sale Rate']),
+            cost: num(obj['Unit Cost']),
+            mrp: num(obj['MRP']),
+            discount: num(obj['Discount']),
+            gst_percent: gstPercent,
+            gst_amount: gstAmount,
+            hsn: str(obj['HSN']),
+            uom: str(obj['UOM']),
             binlocation: 0,
-            total: total,
+            total,
             binid: uniqueid,
-            old_grn_no: obj["GRN No"],
-            old_grn_date: obj["GRN Date"],
-            old_stocks_id: obj["DMS ID"],
-            old_supplier_name: obj["Supplier Name"],
-            old_supplier_date: obj["Supplier Invoice Date"]
-            
+            old_supplier_name: vendor.vendorName,
+            old_supplier_date: toDateString(obj['Supplier Invoice Date']),
           });
 
           binPayload.push({
             item_code: item.itemCode,
-            quantity: parseFloat(obj["Qty"]),
-            binLocation: obj["Location"] || null,
-            outlet_code: outlet?.outletCode,
+            quantity: num(obj['Qty']),
+            binLocation: str(obj['Location']),
+            outlet_code: outlet.outletCode,
             binid: uniqueid,
           });
 
           uniqueid++;
         }
-if (grnPartsPayload.length === 0) {
-  continue;
-}
-            const GRN_Parts_data = await GrnService.BulkCreatePartsAndStocks(
-            grnPartsPayload,
-            GRN_data,
-            req.user,
-            mainTransaction
-          );
 
-          await GrnService.BulkCreateGateeinBinLocation(
-            binPayload,
-            req.user,
-            GRN_Parts_data,
-            mainTransaction
-          );
+        if (grnPartsPayload.length === 0) continue;
 
-
-       
-      }
-        const stockAdjustment = await GrnService.CreateStockAdjustment(
+        const GRN_Parts_data = await GrnService.BulkCreatePartsAndStocks(
+          grnPartsPayload,
           GRN_data,
-          grand_total,
           req.user,
           mainTransaction
         );
 
-        const parts = await db.grnparts.findAll({
-          where: { grn_id: GRN_data?.dataValues?.id },
-          transaction: mainTransaction
-        });
-        const plainParts = parts.map(p => p.get({ plain: true }));
-
-        await GrnService.CreateStockAdjustmentParts(
-          plainParts,
-          stockAdjustment,
+        await GrnService.BulkCreateGateeinBinLocation(
+          binPayload,
+          req.user,
+          GRN_Parts_data,
           mainTransaction
-        );   
+        );
+
+        partsCreated += grnPartsPayload.length;
+      }
+
+      if (partsCreated === 0) continue;
+
+      const stockAdjustment = await GrnService.CreateStockAdjustment(
+        GRN_data,
+        round2(grand_total),
+        req.user,
+        mainTransaction
+      );
+
+      const parts = await db.grnparts.findAll({
+        where: { grn_id: GRN_data?.dataValues?.id },
+        transaction: mainTransaction,
+      });
+
+      await GrnService.CreateStockAdjustmentParts(
+        parts.map(p => p.get({ plain: true })),
+        stockAdjustment,
+        mainTransaction
+      );
+
+      createdGrns.push(GRN_data?.dataValues?.id);
     }
 
-    //  FAILED EXPORT
+    // ---------- FAILED EXPORT (all-or-nothing) ----------
     if (failedRows.length > 0) {
+      await mainTransaction.rollback();
+
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename="failed_grns.xlsx"');
 
-      const workbook = new excel.stream.xlsx.WorkbookWriter({ stream: res });
-      const worksheet = workbook.addWorksheet('Failed Rows');
+      const failedWorkbook = new excel.stream.xlsx.WorkbookWriter({ stream: res });
+      const failedSheet = failedWorkbook.addWorksheet('Failed Rows');
 
-      const finalHeaders = [...headers, "Error Message"];
-      worksheet.addRow(finalHeaders).commit();
+      const finalHeaders = [...headers, 'Error Message'];
+      failedSheet.addRow(finalHeaders).commit();
 
       for (const row of failedRows) {
-        const rowData = finalHeaders.map(h => row[h] || '');
-        worksheet.addRow(rowData).commit();
+        failedSheet.addRow(finalHeaders.map(h => row[h] ?? '')).commit();
       }
 
-      await workbook.commit();
+      await failedWorkbook.commit();
       return;
     }
-        mainTransaction.commit();
+
+    await mainTransaction.commit();
     return res.status(200).json({
       requestSuccessful: true,
       message: 'Multiple GRNs created successfully',
       grnIds: createdGrns,
     });
-
   } catch (error) {
     await mainTransaction.rollback();
     next(error);
