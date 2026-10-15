@@ -3,6 +3,8 @@ import logger from '../../config/logger.js';
 import {
   getMasterListService,
   getPartsListService,
+  getStockListService,
+  getBatchStockListService,
   getCartService,
   addCartService,
   getTop20CarsService,
@@ -119,6 +121,29 @@ export const addCart = async (req, res, next) => {
 };
 
 /**
+ * Check Stock for parts via Partsmart getStockList API (/getStockList, /checkStock)
+ */
+export const getStockList = async (req, res, next) => {
+  try {
+    const payload = {
+      ...req.query,
+      ...req.body,
+    };
+
+    const response = await getStockListService(payload, req.user?.id);
+
+    if (response?.statusCode && response.statusCode !== 200) {
+      return res.status(response.statusCode).json(response);
+    }
+
+    return res.status(200).json(response);
+  } catch (error) {
+    logger.error('Catelog Controller getStockList Error:', error.message);
+    next(error);
+  }
+};
+
+/**
  * Gets direct enquiry orders / workshop orders
  */
 export const getOrders = async (req, res, next) => {
@@ -203,6 +228,12 @@ export const createDirectEnquiryOrder = async (req, res, next) => {
 
     const response = await createDirectEnquiryOrderService(payload, userId, clientAuthHeader);
 
+    if (response?._target_domain) {
+      res.setHeader('X-Dearo-Target-Domain', response._target_domain);
+      res.setHeader('X-Dearo-Environment', response._target_environment || 'UAT');
+      res.setHeader('X-Dearo-Full-Url', response._full_url || response._target_domain);
+    }
+
     if (response?.error) {
       return res.status(response.error.statusCode || 400).json(response);
     }
@@ -236,6 +267,12 @@ export const getDirectEnquiryOrderList = async (req, res, next) => {
       '';
 
     const response = await getDirectEnquiryOrderListService(workshopId, clientAuthHeader, userId);
+
+    if (response?._target_domain) {
+      res.setHeader('X-Dearo-Target-Domain', response._target_domain);
+      res.setHeader('X-Dearo-Environment', response._target_environment || 'UAT');
+    }
+
     return res.status(200).json(response);
   } catch (error) {
     logger.error('Catelog Controller getDirectEnquiryOrderList Error:', error.message);
@@ -274,6 +311,11 @@ export const getDirectEnquiryOrderStatus = async (req, res, next) => {
     };
 
     const response = await getDirectEnquiryOrderStatusService(payload, clientAuthHeader);
+
+    if (response?._target_domain) {
+      res.setHeader('X-Dearo-Target-Domain', response._target_domain);
+      res.setHeader('X-Dearo-Environment', response._target_environment || 'UAT');
+    }
 
     if (response?.error) {
       return res.status(response.error.statusCode || 400).json(response);
@@ -506,6 +548,7 @@ export const createLubesProduct = async (req, res, next) => {
 export default {
   getMasterList,
   getPartsList,
+  getStockList,
   getCart,
   addCart,
   getOrders,

@@ -29,6 +29,9 @@ router.post('/addToCart', JwtMiddleware.checkToken, partsCatalogueController.add
 router.post('/updateQuantity', JwtMiddleware.checkToken, partsCatalogueController.updateQty);
 router.post('/removeItem', JwtMiddleware.checkToken, partsCatalogueController.deleteCartItem);
 
+// Stock Check endpoint for Cart / Catalog
+router.post('/partsmart/getStockList', JwtMiddleware.checkToken, controller.getStockList);
+
 // Direct Enquiry Order Endpoints (3 Core APIs)
 router.post('/partsmart/order/direct-enquiry/create', JwtMiddleware.checkToken, controller.createDirectEnquiryOrder);
 router.get('/partsmart/order/direct-enquiry/list', JwtMiddleware.checkToken, controller.getDirectEnquiryOrderList);

@@ -500,6 +500,163 @@ export const addCartService = async (payload, userId = null) => {
 };
 
 /**
+ * Partsmart External Stock List Service (/getStockList)
+ * Queries external Partsmart API for available stock and inventory details for part(s).
+ */
+export const getStockListService = async (payload = {}, userId = null) => {
+  const rawPartNumber =
+    payload.partNumber ||
+    payload.part_number ||
+    payload.partNo ||
+    payload.code ||
+    payload.item_code;
+
+  // Support batch check if payload.parts is an array
+  if (Array.isArray(payload.parts) && payload.parts.length > 0 && !rawPartNumber) {
+    return await getBatchStockListService(payload, userId);
+  }
+
+  const partNumber = String(rawPartNumber || '').trim();
+  if (!partNumber) {
+    return {
+      success: false,
+      statusCode: 400,
+      message: 'partNumber is required',
+      count: 0,
+      totalAvailableQty: 0,
+      data: [],
+    };
+  }
+
+  const initialCustomerCode = String(
+    payload.customerCode ||
+    payload.customer_code ||
+    '050'
+  ).trim();
+  const alternateCustomerCode = initialCustomerCode === '050' ? '0046' : '050';
+
+  const basePayload = {
+    partNumber,
+    inventoryName: payload.inventoryName !== undefined ? payload.inventoryName : null,
+    entity: payload.entity !== undefined ? payload.entity : null,
+    software: payload.software !== undefined && payload.software !== null ? payload.software : 'DMS',
+    limit: payload.limit !== undefined && payload.limit !== null ? Number(payload.limit) : 100,
+    offset: payload.offset !== undefined && payload.offset !== null ? Number(payload.offset) : 0,
+    sortOrder: payload.sortOrder || 'ASC',
+    fieldOrder: payload.fieldOrder || 'lotAgeDate',
+  };
+
+  const candidateCustomerCodes = payload.customerCode || payload.customer_code
+    ? [initialCustomerCode]
+    : [initialCustomerCode, alternateCustomerCode];
+
+  let lastResponseData = null;
+
+  for (const cCode of candidateCustomerCodes) {
+    const requestPayload = {
+      customerCode: cCode,
+      ...basePayload,
+    };
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}getStockList`,
+        requestPayload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: getBasicAuthHeader(),
+          },
+          timeout: 15000,
+        }
+      );
+
+      if (response.data && response.data.success !== false) {
+        const list = Array.isArray(response.data.data) ? response.data.data : [];
+        const totalAvailableQty = list.reduce((sum, item) => sum + (Number(item?.qty) || 0), 0);
+
+        lastResponseData = {
+          success: true,
+          message: response.data.message || 'Data fetched Successfully',
+          count: response.data.count !== undefined ? response.data.count : list.length,
+          totalAvailableQty,
+          customerCode: cCode,
+          data: list,
+        };
+
+        if (list.length > 0) {
+          return lastResponseData;
+        }
+      } else if (response.data) {
+        lastResponseData = response.data;
+      }
+    } catch (err) {
+      logger.warn(
+        `Partsmart getStockList API error for part ${partNumber} (customerCode: ${cCode}):`,
+        err.response?.data || err.message
+      );
+    }
+  }
+
+  if (lastResponseData) {
+    return lastResponseData;
+  }
+
+  return {
+    success: true,
+    message: 'Data fetched Successfully',
+    count: 0,
+    totalAvailableQty: 0,
+    customerCode: initialCustomerCode,
+    data: [],
+  };
+};
+
+/**
+ * Batch stock list checking for an array of parts in a cart session
+ */
+export const getBatchStockListService = async (payload, userId = null) => {
+  const parts = Array.isArray(payload.parts) ? payload.parts : [];
+  const partNumbers = parts
+    .map((p) => (typeof p === 'string' ? p : p?.partNumber || p?.part_number || p?.code || p?.partNo))
+    .filter(Boolean);
+
+  const results = await Promise.allSettled(
+    partNumbers.map((pNo) =>
+      getStockListService({ ...payload, parts: undefined, partNumber: pNo }, userId)
+    )
+  );
+
+  const stocksByPartNumber = {};
+  const allData = [];
+  let totalQty = 0;
+
+  partNumbers.forEach((pNo, idx) => {
+    const res = results[idx]?.status === 'fulfilled' ? results[idx].value : null;
+    const items = Array.isArray(res?.data) ? res.data : [];
+    const partQty = items.reduce((sum, item) => sum + (Number(item?.qty) || 0), 0);
+
+    totalQty += partQty;
+    allData.push(...items);
+    stocksByPartNumber[pNo] = {
+      success: res?.success ?? false,
+      totalAvailableQty: partQty,
+      count: items.length,
+      data: items,
+    };
+  });
+
+  return {
+    success: true,
+    message: 'Batch stock fetched successfully',
+    count: allData.length,
+    totalAvailableQty: totalQty,
+    stocksByPartNumber,
+    data: allData,
+  };
+};
+
+/**
  * Top 20 Cars Services (Fetches makes dynamically via getMasterList)
  */
 export const getTop20CarsService = async (clientAuthHeader = null) => {
@@ -553,11 +710,20 @@ export const getOrderToken = async (forceLogin = false) => {
 
 export const callPartsmartDirectOrderApi = async (endpoint, payload, method = 'post') => {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+  const targetUrl = `${ORDER_BASE_URL}${formattedEndpoint}`;
+  const targetEnv = ORDER_BASE_URL.includes('uat') ? 'UAT' : 'LIVE';
+
+  console.log('\n================================================================');
+  console.log(`[PARTSMART DIRECT ORDER API CALL]`);
+  console.log(`  Target Environment : ${targetEnv}`);
+  console.log(`  Full Request URL   : ${targetUrl}`);
+  console.log(`  Method             : ${method.toUpperCase()}`);
+  console.log('================================================================\n');
 
   const executeRequest = async (token) => {
     const options = {
       method: method.toLowerCase(),
-      url: `${ORDER_BASE_URL}${formattedEndpoint}`,
+      url: targetUrl,
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json',
@@ -575,6 +741,15 @@ export const callPartsmartDirectOrderApi = async (endpoint, payload, method = 'p
   try {
     const token = await getOrderToken(false);
     const res = await executeRequest(token);
+    console.log(`[PARTSMART DIRECT ORDER RESPONSE] from ${targetEnv} (${targetUrl}): Status ${res.status}`);
+
+    if (res.data && typeof res.data === 'object' && !Array.isArray(res.data)) {
+      res.data._called_api = 'Partsmart Direct Order API';
+      res.data._target_domain = ORDER_BASE_URL;
+      res.data._target_environment = targetEnv;
+      res.data._full_url = targetUrl;
+    }
+
     return res.data;
   } catch (err) {
     const status = err.response?.status;
@@ -583,6 +758,14 @@ export const callPartsmartDirectOrderApi = async (endpoint, payload, method = 'p
       cachedTokenExpiresAt = null;
       const newToken = await getOrderToken(true);
       const retryRes = await executeRequest(newToken);
+
+      if (retryRes.data && typeof retryRes.data === 'object' && !Array.isArray(retryRes.data)) {
+        retryRes.data._called_api = 'Partsmart Direct Order API';
+        retryRes.data._target_domain = ORDER_BASE_URL;
+        retryRes.data._target_environment = targetEnv;
+        retryRes.data._full_url = targetUrl;
+      }
+
       return retryRes.data;
     }
     throw err;
@@ -652,6 +835,19 @@ export const callDearoDirectEnquiryApi = async (
 
   const tryRequest = async (baseUrl) => {
     const url = `${baseUrl}${cleanEndpoint}`;
+    const targetEnv = baseUrl.includes('uat') ? 'UAT' : 'LIVE';
+
+    console.log('\n================================================================');
+    console.log(`[DEARO API CALL]`);
+    console.log(`  Target Environment : ${targetEnv}`);
+    console.log(`  Full Request URL   : ${url}`);
+    console.log(`  Method             : ${method.toUpperCase()}`);
+    console.log(`  isLive Flag        : ${isLive} (NODE_ENV="${process.env.NODE_ENV}", USE_LIVE_DEARO="${process.env.USE_LIVE_DEARO}")`);
+    console.log(`  Primary Base       : ${primaryBase}`);
+    console.log('================================================================\n');
+
+    logger.info(`[DEARO API CALL] Requesting ${targetEnv} at: ${url}`);
+
     const options = {
       method: method.toUpperCase(),
       url,
@@ -671,6 +867,15 @@ export const callDearoDirectEnquiryApi = async (
     }
 
     const response = await axios(options);
+    console.log(`[DEARO API RESPONSE] from ${targetEnv} (${url}): Status ${response.status}`, JSON.stringify(response.data));
+
+    if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+      response.data._called_api = 'DearO Direct Enquiry API';
+      response.data._target_domain = baseUrl;
+      response.data._target_environment = targetEnv;
+      response.data._full_url = url;
+    }
+
     return response.data;
   };
 
@@ -684,6 +889,8 @@ export const callDearoDirectEnquiryApi = async (
   try {
     return await tryRequest(primaryBase);
   } catch (primaryErr) {
+    console.warn(`[DEARO API PRIMARY FAILED] ${primaryBase}${cleanEndpoint}: ${formatErr(primaryErr)}`);
+    console.warn(`[DEARO API RETRYING SECONDARY] -> ${secondaryBase}${cleanEndpoint}`);
     logger.warn(
       `DearO Direct Enquiry Primary API (${primaryBase}${cleanEndpoint}) error: ${formatErr(primaryErr)} | Payload: ${JSON.stringify(payload)}`
     );
@@ -691,6 +898,7 @@ export const callDearoDirectEnquiryApi = async (
     try {
       return await tryRequest(secondaryBase);
     } catch (secondaryErr) {
+      console.error(`[DEARO API SECONDARY FAILED] ${secondaryBase}${cleanEndpoint}: ${formatErr(secondaryErr)}`);
       logger.warn(
         `DearO Direct Enquiry Secondary API (${secondaryBase}${cleanEndpoint}) error: ${formatErr(secondaryErr)} | Payload: ${JSON.stringify(payload)}`
       );
@@ -1573,6 +1781,8 @@ export const createLubesProductService = async (payload, userId = null) => {
 export default {
   getMasterListService,
   getPartsListService,
+  getStockListService,
+  getBatchStockListService,
   getCartService,
   addCartService,
   getTop20CarsService,

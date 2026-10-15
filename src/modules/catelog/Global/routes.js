@@ -1,5 +1,6 @@
 import express from 'express';
 import controller from './controller.js';
+import catelogController from '../controller.js';
 import partsCatalogueController from '../../Parts/partsCatalogue/controller.js';
 import JwtMiddleware from '../../../config/jwtMiddleware.js';
 
@@ -23,6 +24,9 @@ router.post('/updateQuantity', JwtMiddleware.checkToken, partsCatalogueControlle
 router.post('/removeItem', JwtMiddleware.checkToken, partsCatalogueController.deleteCartItem);
 router.get('/getOrderHistories', JwtMiddleware.checkToken, partsCatalogueController.getOrderHistories);
 router.post('/placeOrderNew', JwtMiddleware.checkToken, partsCatalogueController.placeOrderNew);
+
+// Global Catalog Stock Check endpoint
+router.post('/partsmart/getStockList', JwtMiddleware.checkToken, catelogController.getStockList);
 
 // Vahan & Vehicle Resolve Endpoints
 router.post('/vehicleResolve', controller.resolveVehicle);
