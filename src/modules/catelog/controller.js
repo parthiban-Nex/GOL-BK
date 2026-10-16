@@ -392,28 +392,17 @@ export const proxyImage = async (req, res, next) => {
     } catch (err) {
       logger.warn('Primary image storage failed, using fallback Dearo image proxy:', err.message);
 
-      const isProd = process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production';
-      const primaryDearoUrl = isProd
-        ? `https://api.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
-        : `https://uatws.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`;
-
-      const secondaryDearoUrl = isProd
-        ? `https://uatws.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
-        : `https://api.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`;
+      const fallbackDearoUrl = `https://uatws.dearo.in/api/jobCards/partsmart/image?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`;
 
       try {
-        const fallbackResponse = await axios.get(primaryDearoUrl, { responseType: 'stream', timeout: 10000 });
+        const fallbackResponse = await axios.get(fallbackDearoUrl, { responseType: 'stream', timeout: 10000 });
         if (fallbackResponse.headers['content-type']) {
           res.setHeader('Content-Type', fallbackResponse.headers['content-type']);
         }
         return fallbackResponse.data.pipe(res);
-      } catch (fallbackErr1) {
-        logger.warn('Primary Dearo image proxy fallback failed, trying secondary Dearo URL:', fallbackErr1.message);
-        const fallbackResponse2 = await axios.get(secondaryDearoUrl, { responseType: 'stream', timeout: 10000 });
-        if (fallbackResponse2.headers['content-type']) {
-          res.setHeader('Content-Type', fallbackResponse2.headers['content-type']);
-        }
-        return fallbackResponse2.data.pipe(res);
+      } catch (fallbackErr) {
+        logger.error('Dearo image proxy fallback failed:', fallbackErr.message);
+        return res.status(404).send('Image not found');
       }
     }
   } catch (error) {

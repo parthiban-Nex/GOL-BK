@@ -6,8 +6,8 @@ const API_BASE_URL = 'https://websprint.mytvspartsmart.in/catalog/api/v1/externa
 const API_USERNAME = 'Z5Qnpqcd6D4LpfXNjmum';
 const API_PASSWORD = 'cFkH4BJh5gtvCt5mKPN4CLc74QNv4MmTXZ7RArJr3iwP4NpWLBHUQbAyfJxH';
 
-const DEARO_API_BASE_URL = 'https://api.dearo.in/api/jobCards/partsmart/';
 const UAT_DEARO_API_BASE_URL = 'https://uatws.dearo.in/api/jobCards/partsmart/';
+const DEARO_API_BASE_URL = UAT_DEARO_API_BASE_URL;
 
 const GLOBAL_CUSTOMER_CODE = '0046';
 
@@ -35,16 +35,14 @@ const enrichMasterListResponse = (responseData, payload) => {
   if (!responseData) return responseData;
 
   if (payload?.masterType === 'vehicleGeneration' && Array.isArray(responseData?.data)) {
-    const publicBaseUrl = getPublicApiBaseUrl();
-
     responseData.data = responseData.data.map((item) => {
       const masterName = item && item.masterName ? String(item.masterName).trim() : '';
       const imageName = masterName ? masterName.replace(/\//g, '-') + '.png' : '';
       let imageUrl = null;
       if (item?.url && typeof item.url === 'string') {
-        imageUrl = item.url.replace(/^https?:\/\/(api|uatws)\.dearo\.in\/api/i, publicBaseUrl);
+        imageUrl = item.url.replace(/^https?:\/\/api\.dearo\.in/i, 'https://uatws.dearo.in');
       } else if (imageName) {
-        imageUrl = `${publicBaseUrl}/jobCards/partsmart/image?type=Variant&name=${encodeURIComponent(imageName)}`;
+        imageUrl = `https://uatws.dearo.in/api/jobCards/partsmart/image?type=Variant&name=${encodeURIComponent(imageName)}`;
       }
 
       return {
@@ -160,32 +158,15 @@ export const getGlobalMasterListService = async (payload = {}, clientAuthHeader 
     vehicleGeneration: genString || (genArray ? genArray[0] : null),
   };
 
-  // 2. Try Live Dearo Endpoint with client Auth header
+  // 2. Try UAT Dearo Endpoint with client Auth header
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (clientAuthHeader) headers['Authorization'] = clientAuthHeader;
 
     const response = await axios.post(
-      `${DEARO_API_BASE_URL}getMasterList`,
-      finalFallbackPayload,
-      { headers, timeout: 15000 }
-    );
-    if (response.data && response.data.success !== false) {
-      return enrichMasterListResponse(response.data, finalFallbackPayload);
-    }
-  } catch (err) {
-    logger.warn('Global Dearo getMasterList Error:', err.response?.data?.message || err.message);
-  }
-
-  // 3. Try UAT Dearo Endpoint
-  try {
-    const response = await axios.post(
       `${UAT_DEARO_API_BASE_URL}getMasterList`,
       finalFallbackPayload,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 15000,
-      }
+      { headers, timeout: 15000 }
     );
     if (response.data && response.data.success !== false) {
       return enrichMasterListResponse(response.data, finalFallbackPayload);
@@ -286,30 +267,15 @@ export const getGlobalPartsListService = async (payload = {}, clientAuthHeader =
     vehicleGeneration: genString || (genArray ? genArray[0] : null),
   };
 
-  // 2. Try Live Dearo Endpoint with client Auth header
+  // 2. Try UAT Dearo Endpoint with client Auth header
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (clientAuthHeader) headers['Authorization'] = clientAuthHeader;
 
     const response = await axios.post(
-      `${DEARO_API_BASE_URL}getPartsList`,
-      finalFallbackPayload,
-      { headers, timeout: 15000 }
-    );
-    if (response.data && response.data.success !== false) return response.data;
-  } catch (err) {
-    logger.warn('Global Dearo getPartsList Error:', err.response?.data?.message || err.message);
-  }
-
-  // 3. Try UAT Dearo Endpoint
-  try {
-    const response = await axios.post(
       `${UAT_DEARO_API_BASE_URL}getPartsList`,
       finalFallbackPayload,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 15000,
-      }
+      { headers, timeout: 15000 }
     );
     if (response.data && response.data.success !== false) return response.data;
   } catch (err) {
@@ -348,30 +314,15 @@ export const callPartsmartCatalog = async (endpoint, payload = {}, clientAuthHea
     logger.warn(`Global Partsmart ${cleanEndpoint} Error:`, err.response?.data || err.message);
   }
 
-  // 2. Try Live Dearo Endpoint with client Auth header
+  // 2. Try UAT Dearo Endpoint with client Auth header
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (clientAuthHeader) headers['Authorization'] = clientAuthHeader;
 
     const response = await axios.post(
-      `${DEARO_API_BASE_URL}${cleanEndpoint}`,
-      payload,
-      { headers, timeout: 15000 }
-    );
-    if (response.data && response.data.success !== false) return response.data;
-  } catch (err) {
-    logger.warn(`Global Dearo ${cleanEndpoint} Error:`, err.response?.data || err.message);
-  }
-
-  // 3. Try UAT Dearo Endpoint
-  try {
-    const response = await axios.post(
       `${UAT_DEARO_API_BASE_URL}${cleanEndpoint}`,
       payload,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 15000,
-      }
+      { headers, timeout: 15000 }
     );
     if (response.data && response.data.success !== false) return response.data;
   } catch (err) {

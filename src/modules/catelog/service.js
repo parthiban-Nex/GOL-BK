@@ -9,8 +9,8 @@ const API_BASE_URL = 'https://websprint.mytvspartsmart.in/catalog/api/v1/externa
 const API_USERNAME = 'Z5Qnpqcd6D4LpfXNjmum';
 const API_PASSWORD = 'cFkH4BJh5gtvCt5mKPN4CLc74QNv4MmTXZ7RArJr3iwP4NpWLBHUQbAyfJxH';
 
-const DEARO_API_BASE_URL = 'https://api.dearo.in/api/jobCards/partsmart/';
 const UAT_DEARO_API_BASE_URL = 'https://uatws.dearo.in/api/jobCards/partsmart/';
+const DEARO_API_BASE_URL = UAT_DEARO_API_BASE_URL;
 
 // Partsmart Direct Order Service Config
 const ORDER_BASE_URL = 'https://uat-websprint.mytvspartsmart.in/backend/api/v1';
@@ -56,20 +56,17 @@ const enrichMasterListResponse = (responseData, payload) => {
   if (!responseData) return responseData;
 
   if (payload?.masterType === 'vehicleGeneration' && Array.isArray(responseData?.data)) {
-    const publicBaseUrl = getPublicApiBaseUrl();
-
     responseData.data = responseData.data.map((item) => {
       const masterName = item && item.masterName ? String(item.masterName).trim() : '';
 
       // Normalize filename: replace slashes / with hyphens - and append .png
       const imageName = masterName ? masterName.replace(/\//g, '-') + '.png' : '';
 
-      // Generate proxy image URL supporting both UAT and Production environments dynamically via GOL Backend proxy
       let imageUrl = null;
       if (item?.url && typeof item.url === 'string') {
-        imageUrl = item.url.replace(/^https?:\/\/(api|uatws)\.dearo\.in\/api/i, publicBaseUrl);
+        imageUrl = item.url.replace(/^https?:\/\/api\.dearo\.in/i, 'https://uatws.dearo.in');
       } else if (imageName) {
-        imageUrl = `${publicBaseUrl}/jobCards/partsmart/image?type=Variant&name=${encodeURIComponent(imageName)}`;
+        imageUrl = `https://uatws.dearo.in/api/jobCards/partsmart/image?type=Variant&name=${encodeURIComponent(imageName)}`;
       }
 
       return {
@@ -186,32 +183,15 @@ export const getMasterListService = async (payload, clientAuthHeader = null) => 
     vehicleGeneration: genString || (genArray ? genArray[0] : null),
   };
 
-  // Try 2: Live Dearo Endpoint with client Authorization header
+  // Try 2: UAT Dearo Endpoint with client Authorization header
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (clientAuthHeader) headers['Authorization'] = clientAuthHeader;
 
     const response = await axios.post(
-      `${DEARO_API_BASE_URL}getMasterList`,
-      finalFallbackPayload,
-      { headers, timeout: 15000 }
-    );
-    if (response.data && response.data.success !== false) {
-      return enrichMasterListResponse(response.data, finalFallbackPayload);
-    }
-  } catch (err) {
-    logger.warn('Dearo Catalog API getMasterList error:', err.response?.data?.message || err.message);
-  }
-
-  // Try 3: UAT Dearo Endpoint
-  try {
-    const response = await axios.post(
       `${UAT_DEARO_API_BASE_URL}getMasterList`,
       finalFallbackPayload,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 15000,
-      }
+      { headers, timeout: 15000 }
     );
     if (response.data && response.data.success !== false) {
       return enrichMasterListResponse(response.data, finalFallbackPayload);
@@ -313,30 +293,15 @@ export const getPartsListService = async (payload, clientAuthHeader = null) => {
     vehicleGeneration: genString || (genArray ? genArray[0] : null),
   };
 
-  // Try 2: Live Dearo Endpoint with client Authorization header
+  // Try 2: UAT Dearo Endpoint with client Authorization header
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (clientAuthHeader) headers['Authorization'] = clientAuthHeader;
 
     const response = await axios.post(
-      `${DEARO_API_BASE_URL}getPartsList`,
-      finalFallbackPayload,
-      { headers, timeout: 15000 }
-    );
-    if (response.data && response.data.success !== false) return response.data;
-  } catch (err) {
-    logger.warn('Dearo getPartsList error:', err.response?.data?.message || err.message);
-  }
-
-  // Try 3: UAT Dearo Endpoint
-  try {
-    const response = await axios.post(
       `${UAT_DEARO_API_BASE_URL}getPartsList`,
       finalFallbackPayload,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 15000,
-      }
+      { headers, timeout: 15000 }
     );
     if (response.data && response.data.success !== false) return response.data;
   } catch (err) {
@@ -829,7 +794,7 @@ export const callDearoDirectEnquiryApi = async (
     headers['Authorization'] = dearoToken;
   }
 
-  const isLive = process.env.NODE_ENV === 'production' || process.env.USE_LIVE_DEARO === 'true';
+  const isLive = (process.env.APP_ENV === 'production' || process.env.USE_LIVE_DEARO === 'true') && process.env.APP_ENV !== 'uat';
   const primaryBase = isLive ? LIVE_DEARO_BASE : UAT_DEARO_BASE;
   const secondaryBase = isLive ? UAT_DEARO_BASE : LIVE_DEARO_BASE;
 
@@ -1230,10 +1195,10 @@ export const resolveVehicleService = async (registrationNumber) => {
     logger.warn('Partsmart vehicleResolve error:', err.response?.data || err.message);
   }
 
-  // 2. Try Live Dearo Endpoint
+  // 2. Try UAT Dearo Endpoint
   try {
     const response = await axios.post(
-      `${DEARO_API_BASE_URL}vehicleResolve`,
+      `${UAT_DEARO_API_BASE_URL}vehicleResolve`,
       { vehicleNumber: regNo, registrationNumber: regNo },
       {
         headers: { 'Content-Type': 'application/json' },
@@ -1298,13 +1263,13 @@ export const getVahanDetailsService = async (registrationNumber, clientAuthHeade
     };
   }
 
-  // 1. Try Live Dearo VahanDetails Endpoint
+  // 1. Try UAT Dearo VahanDetails Endpoint
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (clientAuthHeader) headers['Authorization'] = clientAuthHeader;
 
     const response = await axios.get(
-      'https://api.dearo.in/api/VahanDetails/getVahanDetails',
+      'https://uatws.dearo.in/api/VahanDetails/getVahanDetails',
       {
         params: { registrationNumber: regNo },
         headers,
