@@ -556,6 +556,7 @@ app.use('/api/apis',PartsCatalogueMobileRouter)
 // catalog global and top 20 cars
 
 app.use('/api/catelog', catelogRouter);
+app.use('/api/catalog', catelogRouter);
 app.use('/api/jobCards', catelogRouter);
 app.use('/api/LubesProducts', catelogRouter);
 
