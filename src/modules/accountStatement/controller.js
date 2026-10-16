@@ -37,7 +37,7 @@ const getStatementsByOutlet = async (req, res, next) => {
 
     let statements;
 
-    
+
     // View mode condition:
     // GMS SOA (type 4): force Outlet view for the caller's own outlet, regardless of employeeCode.
     const isOutletView = employeeCode === 'outlet_admin' || req.user?.type == 4;
@@ -387,11 +387,11 @@ const getStatementsByOutletForGms = async (req, res, next) => {
     const outletId = req.user?.outlet?.id;
     const { offset, limit } = req.body;
 
-    let statements=[]      
-      statements = await AccountStatementService.getStatementsByOutletForGms(
-        parseInt(outletId),
-        parseInt(offset) || 0,
-        parseInt(limit) || 10, employeeCode);
+    let statements = []
+    statements = await AccountStatementService.getStatementsByOutletForGms(
+      parseInt(outletId),
+      parseInt(offset) || 0,
+      parseInt(limit) || 10, employeeCode);
     console.log('statements result:', statements);
     res.status(200).json({ success: true, data: statements });
   } catch (err) {

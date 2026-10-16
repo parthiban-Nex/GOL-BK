@@ -4,3 +4,7 @@ fit_fcm_service_account.json
 open-source-prod-3cfc5e95e6dd.json
 tvs-dms-firebase-adminsdk-fbsvc-2e1e06717d.json
 prj-stag-gobumpr-service-6567.json
+node_modules
+
+.env
+.env.local
