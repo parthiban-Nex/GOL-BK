@@ -57,6 +57,7 @@ const createExpense = async (payload, user, file = null) => {
     }
 
     const userId = user?.id || null;
+    const userName = user?.employeeCode || user?.name || 'User';
     const outletId = user?.outlet?.id || user?.outletId || user?.outlet || null;
     const companyId = user?.outlet?.company?.id || user?.company?.id || user?.company || null;
 
@@ -65,7 +66,8 @@ const createExpense = async (payload, user, file = null) => {
       userId,
       outletId,
       companyId,
-      documentLink
+      documentLink,
+      userName
     );
 
     if (data && RecentAcivityService?.addRecentActivity) {
@@ -253,9 +255,86 @@ const uploadExpenseDocument = async (id, file, user) => {
   }
 };
 
+const addPayment = async (payload, user) => {
+  try {
+    const userId = user?.id || null;
+    const userName = user?.employeeCode || user?.name || 'User';
+    const outletId = user?.outlet?.id || user?.outletId || user?.outlet || null;
+    const companyId = user?.outlet?.company?.id || user?.company?.id || user?.company || null;
+
+    const result = await ExpenseDao.addPayment(payload, userId, userName, outletId, companyId);
+    if (result && result.notFound) {
+      return {
+        status: 'not_found',
+        message: 'Expense record not found',
+      };
+    }
+
+    if (result && RecentAcivityService?.addRecentActivity) {
+      try {
+        await RecentAcivityService.addRecentActivity({
+          activity_type: 'Update',
+          menu_name: 'Finance',
+          submenu_name: 'Expense',
+          createdBy: userId,
+          username: userName,
+          message: `Payment of ₹${payload.amount} recorded for expense (${result.expense?.expenseCode || payload.expenseId}) via ${payload.paymentMode || 'Payment'}`,
+        });
+      } catch (activityErr) {
+        logger.warn('Failed to log recent activity for Expense Payment:', activityErr);
+      }
+    }
+
+    return {
+      status: 'success',
+      data: result,
+    };
+  } catch (err) {
+    logger.error('Expense service addPayment Error:', err);
+    throw err;
+  }
+};
+
+const getExpensePayments = async (expenseId, user) => {
+  try {
+    const outletId = user?.outlet?.id || user?.outletId || user?.outlet || null;
+    const data = await ExpenseDao.getExpensePayments(expenseId, outletId);
+    return {
+      status: 'success',
+      data,
+    };
+  } catch (err) {
+    logger.error('Expense service getExpensePayments Error:', err);
+    throw err;
+  }
+};
+
+const getExpenseById = async (id, user) => {
+  try {
+    const outletId = user?.outlet?.id || user?.outletId || user?.outlet || null;
+    const data = await ExpenseDao.getExpenseById(id, outletId);
+    if (!data) {
+      return {
+        status: 'not_found',
+        message: 'Expense not found',
+      };
+    }
+    return {
+      status: 'success',
+      data,
+    };
+  } catch (err) {
+    logger.error('Expense service getExpenseById Error:', err);
+    throw err;
+  }
+};
+
 export default {
   createExpense,
   editExpense,
   listExpenses,
   uploadExpenseDocument,
+  addPayment,
+  getExpensePayments,
+  getExpenseById,
 };

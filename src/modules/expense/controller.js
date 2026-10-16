@@ -188,9 +188,112 @@ const uploadExpenseDocument = async (req, res, next) => {
   }
 };
 
+const addPayment = async (req, res, next) => {
+  try {
+    logger.info('Expense Controller addPayment requestData:' + JSON.stringify(req.body));
+    const auditData = {
+      menu_name: 'Finance',
+      submenu_name: 'Expense',
+      action: ACTION_UPDATE,
+      access: 'Portal',
+    };
+
+    const result = await ExpenseService.addPayment(req.body, req.user);
+
+    if (result && result.status === 'success') {
+      auditData.message = 'Payment recorded successfully';
+      auditData.result = 'success';
+      auditLog.createAuditLog(req, auditData);
+
+      return res.status(200).json({
+        requestSuccessful: true,
+        message: 'Payment recorded successfully',
+        data: result.data,
+      });
+    } else if (result && result.status === 'not_found') {
+      auditData.message = 'Expense not found';
+      auditData.result = 'failed';
+      auditLog.createAuditLog(req, auditData);
+
+      return res.status(404).json({
+        requestSuccessful: false,
+        message: result.message || 'Expense not found',
+      });
+    } else {
+      auditData.message = 'Payment not recorded';
+      auditData.result = 'failed';
+      auditLog.createAuditLog(req, auditData);
+
+      return res.status(400).json({
+        requestSuccessful: false,
+        message: 'Failed to record payment',
+      });
+    }
+  } catch (err) {
+    logger.error('Expense Controller addPayment Error:', err);
+    next(err);
+  }
+};
+
+const getExpensePayments = async (req, res, next) => {
+  try {
+    const expenseId = req.body.expenseId || req.body.id;
+    if (!expenseId) {
+      return res.status(400).json({
+        requestSuccessful: false,
+        message: 'Expense ID is required',
+      });
+    }
+
+    const result = await ExpenseService.getExpensePayments(expenseId, req.user);
+
+    return res.status(200).json({
+      requestSuccessful: true,
+      message: 'Expense payments retrieved successfully',
+      data: result.data,
+    });
+  } catch (err) {
+    logger.error('Expense Controller getExpensePayments Error:', err);
+    next(err);
+  }
+};
+
+const getExpense = async (req, res, next) => {
+  try {
+    const id = req.body.id || req.body.expenseId;
+    if (!id) {
+      return res.status(400).json({
+        requestSuccessful: false,
+        message: 'Expense ID is required',
+      });
+    }
+
+    const result = await ExpenseService.getExpenseById(id, req.user);
+
+    if (result && result.status === 'success') {
+      return res.status(200).json({
+        requestSuccessful: true,
+        message: 'Expense retrieved successfully',
+        data: result.data,
+      });
+    } else {
+      return res.status(404).json({
+        requestSuccessful: false,
+        message: result.message || 'Expense not found',
+      });
+    }
+  } catch (err) {
+    logger.error('Expense Controller getExpense Error:', err);
+    next(err);
+  }
+};
+
 export default {
   createExpense,
   editExpense,
   listExpenses,
   uploadExpenseDocument,
+  addPayment,
+  getExpensePayments,
+  getExpense,
 };

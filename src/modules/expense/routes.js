@@ -57,5 +57,30 @@ router.post(
   controller.uploadExpenseDocument
 );
 
+router.post(
+  '/addPayment',
+  JwtMiddleware.checkToken,
+  expenseRules['addPayment'],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return next(new ValidationException(errors.array()));
+    }
+    return await controller.addPayment(req, res, next);
+  }
+);
+
+router.post(
+  '/getExpensePayments',
+  JwtMiddleware.checkToken,
+  controller.getExpensePayments
+);
+
+router.post(
+  '/getExpense',
+  JwtMiddleware.checkToken,
+  controller.getExpense
+);
+
 const expenseRouter = router;
 export default expenseRouter;

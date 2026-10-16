@@ -15,4 +15,13 @@ export const expenseRules = {
     check('invoiceNo').notEmpty().withMessage('Invoice / reference number is required'),
   ],
   list: [],
+  addPayment: [
+    check('expenseId').notEmpty().withMessage('Expense ID is required'),
+    check('amount')
+      .notEmpty()
+      .withMessage('Payment amount is required')
+      .isFloat({ min: 0.01 })
+      .withMessage('Payment amount must be greater than 0'),
+    check('paymentMode').notEmpty().withMessage('Payment mode is required'),
+  ],
 };

@@ -19,8 +19,7 @@ const generateExpenseCode = async () => {
   }
 };
 
-const createExpense = async (payload, userId, outletId, companyId, documentLink = null) => {
-  console.log('check payload data------', payload)
+const createExpense = async (payload, userId, outletId, companyId, documentLink = null, userName = null) => {
   try {
     const expenseCode = payload.expenseCode || (await generateExpenseCode());
 
@@ -29,7 +28,7 @@ const createExpense = async (payload, userId, outletId, companyId, documentLink 
     const inclGst = Number(payload.inclGst) || (exclGst + gst);
     const paid = Number(payload.paid) || 0;
     const pending = Math.max(0, inclGst - paid);
-    const status = payload.status || (paid >= inclGst && inclGst > 0 ? 'Paid' : 'Pending');
+    const status = payload.status || (paid >= inclGst && inclGst > 0 ? 'Paid' : (paid > 0 ? 'Partially Paid' : 'Pending'));
 
     const created = await Expense.create({
       expenseCode,
@@ -53,7 +52,27 @@ const createExpense = async (payload, userId, outletId, companyId, documentLink 
       createdBy: userId || null,
     });
 
-    return created;
+    // If an initial payment was recorded at the time of creation, log it in expense_payments
+    if (paid > 0 && db.expensePayments) {
+      try {
+        await db.expensePayments.create({
+          expenseId: created.id,
+          paymentDate: payload.paymentDate || payload.date || new Date().toISOString().split('T')[0],
+          amount: paid,
+          paymentMode: payload.paymentMode || 'Cash',
+          referenceNo: payload.referenceNo || null,
+          notes: payload.paymentNotes || payload.notes || 'Initial payment',
+          outletId: outletId || null,
+          companyId: companyId || null,
+          createdBy: userId || null,
+          createdByName: userName || null,
+        });
+      } catch (paymentErr) {
+        logger.error('Failed to create initial ExpensePayment record:', paymentErr);
+      }
+    }
+
+    return await getExpenseById(created.id, outletId);
   } catch (err) {
     logger.error('Expense DAO createExpense Error:', err);
     throw err;
@@ -66,7 +85,19 @@ const getExpenseById = async (id, outletId = null) => {
     if (outletId) {
       whereConditions.outletId = outletId;
     }
-    return await Expense.findOne({ where: whereConditions });
+    const includeOptions = [];
+    if (db.expensePayments) {
+      includeOptions.push({
+        model: db.expensePayments,
+        as: 'payments',
+      });
+    }
+
+    return await Expense.findOne({
+      where: whereConditions,
+      include: includeOptions,
+      order: db.expensePayments ? [[{ model: db.expensePayments, as: 'payments' }, 'id', 'DESC']] : undefined,
+    });
   } catch (err) {
     logger.error('Expense DAO getExpenseById Error:', err);
     throw err;
@@ -137,6 +168,14 @@ const listExpenses = async ({
       pending: Number(totalsAgg?.totalPending) || 0,
     };
 
+    const includeOptions = [];
+    if (db.expensePayments) {
+      includeOptions.push({
+        model: db.expensePayments,
+        as: 'payments',
+      });
+    }
+
     // If pagination params are provided
     if (page && pageSize) {
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -145,6 +184,8 @@ const listExpenses = async ({
 
       const { count, rows } = await Expense.findAndCountAll({
         where: whereConditions,
+        include: includeOptions,
+        distinct: true,
         order: [['id', 'DESC']],
         limit: limitNum,
         offset: offsetNum,
@@ -163,6 +204,7 @@ const listExpenses = async ({
     // If no pagination params, return all matching
     const data = await Expense.findAll({
       where: whereConditions,
+      include: includeOptions,
       order: [['id', 'DESC']],
     });
 
@@ -176,6 +218,101 @@ const listExpenses = async ({
     };
   } catch (err) {
     logger.error('Expense DAO listExpenses Error:', err);
+    throw err;
+  }
+};
+
+const addPayment = async (payload, userId, userName = null, outletId = null, companyId = null) => {
+  const t = await db.sequelize.transaction();
+  try {
+    const expenseId = payload.expenseId;
+    const amount = Number(payload.amount);
+    if (!expenseId) {
+      throw new Error('Expense ID is required');
+    }
+    if (!amount || isNaN(amount) || amount <= 0) {
+      throw new Error('Valid payment amount greater than 0 is required');
+    }
+
+    const whereConditions = { id: expenseId };
+    if (outletId) {
+      whereConditions.outletId = outletId;
+    }
+
+    const expense = await Expense.findOne({ where: whereConditions, transaction: t, lock: true });
+    if (!expense) {
+      await t.rollback();
+      return { notFound: true };
+    }
+
+    const currentPending = Number(expense.pending) || 0;
+    if (currentPending <= 0) {
+      await t.rollback();
+      throw new Error('This expense is already fully paid');
+    }
+
+    if (amount > currentPending + 0.01) {
+      await t.rollback();
+      throw new Error(`Payment amount (₹${amount}) cannot exceed remaining balance of ₹${currentPending.toFixed(2)}`);
+    }
+
+    const payment = await db.expensePayments.create(
+      {
+        expenseId,
+        amount,
+        paymentMode: payload.paymentMode || 'Cash',
+        referenceNo: payload.referenceNo || null,
+        paymentDate: payload.paymentDate || new Date().toISOString().split('T')[0],
+        notes: payload.notes || null,
+        outletId: outletId || expense.outletId || null,
+        companyId: companyId || expense.companyId || null,
+        createdBy: userId || null,
+        createdByName: userName || null,
+      },
+      { transaction: t }
+    );
+
+    const newPaid = Number(expense.paid || 0) + amount;
+    const inclGst = Number(expense.inclGst || 0);
+    const newPending = Math.max(0, inclGst - newPaid);
+    const newStatus = newPending <= 0 ? 'Paid' : 'Partially Paid';
+
+    await expense.update(
+      {
+        paid: newPaid,
+        pending: newPending,
+        status: newStatus,
+        paymentMode: payload.paymentMode || expense.paymentMode,
+        updatedBy: userId || null,
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+
+    const updatedExpense = await getExpenseById(expenseId, outletId);
+    return { payment, expense: updatedExpense };
+  } catch (err) {
+    if (t && !t.finished) {
+      await t.rollback();
+    }
+    logger.error('Expense DAO addPayment Error:', err);
+    throw err;
+  }
+};
+
+const getExpensePayments = async (expenseId, outletId = null) => {
+  try {
+    const whereConditions = { expenseId };
+    if (outletId) {
+      whereConditions.outletId = outletId;
+    }
+    return await db.expensePayments.findAll({
+      where: whereConditions,
+      order: [['paymentDate', 'DESC'], ['id', 'DESC']],
+    });
+  } catch (err) {
+    logger.error('Expense DAO getExpensePayments Error:', err);
     throw err;
   }
 };
@@ -197,7 +334,7 @@ const updateExpense = async (id, payload, userId, outletId = null, companyId = n
     const inclGst = payload.inclGst !== undefined ? Number(payload.inclGst) || 0 : (exclGst + gst);
     const paid = payload.paid !== undefined ? Number(payload.paid) || 0 : Number(existing.paid) || 0;
     const pending = Math.max(0, inclGst - paid);
-    const status = payload.status || (paid >= inclGst && inclGst > 0 ? 'Paid' : 'Pending');
+    const status = payload.status || (paid >= inclGst && inclGst > 0 ? 'Paid' : (paid > 0 ? 'Partially Paid' : 'Pending'));
 
     const updateFields = {
       head: payload.head || existing.head,
@@ -222,7 +359,7 @@ const updateExpense = async (id, payload, userId, outletId = null, companyId = n
     }
 
     await existing.update(updateFields);
-    return existing;
+    return await getExpenseById(id, outletId);
   } catch (err) {
     logger.error('Expense DAO updateExpense Error:', err);
     throw err;
@@ -245,7 +382,7 @@ const updateExpenseDocument = async (id, documentLink, userId, outletId = null, 
       documentLink,
       updatedBy: userId || null,
     });
-    return existing;
+    return await getExpenseById(id, outletId);
   } catch (err) {
     logger.error('Expense DAO updateExpenseDocument Error:', err);
     throw err;
@@ -259,4 +396,6 @@ export default {
   updateExpenseDocument,
   listExpenses,
   generateExpenseCode,
+  addPayment,
+  getExpensePayments,
 };

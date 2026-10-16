@@ -349,9 +349,23 @@ import catalogueUserDatas from './Parts/partsCatalogue/models/catalogueuser.js';
 import dmsTokendatas from './user/models/DmsToken.js';
 import expenseVendordatas from './expenseVendor/models/expenseVendor.js';
 import expensedatas from './expense/models/expense.js';
+import expensepaymentdatas from './expense/models/expensePayment.js';
+import financePurchaseVendordatas from './financePurchaseVendor/models/financePurchaseVendor.js';
+import financePurchasedatas from './financePurchase/models/financePurchase.js';
+import financePurchaseItemdatas from './financePurchase/models/financePurchaseItem.js';
+import financePurchasePaymentdatas from './financePurchase/models/financePurchasePayment.js';
+import bankDepositdatas from './bankDeposit/models/bankDeposit.js';
+import bankDepositHistorydatas from './bankDeposit/models/bankDepositHistory.js';
 
 db.expenseVendors = expenseVendordatas(sequelize, DataTypes);
 db.expenses = expensedatas(sequelize, DataTypes);
+db.expensePayments = expensepaymentdatas(sequelize, DataTypes);
+db.financePurchaseVendors = financePurchaseVendordatas(sequelize, DataTypes);
+db.financePurchases = financePurchasedatas(sequelize, DataTypes);
+db.financePurchaseItems = financePurchaseItemdatas(sequelize, DataTypes);
+db.financePurchasePayments = financePurchasePaymentdatas(sequelize, DataTypes);
+db.bankDeposits = bankDepositdatas(sequelize, DataTypes);
+db.bankDepositHistories = bankDepositHistorydatas(sequelize, DataTypes);
 db.users = userdatas(sequelize, DataTypes);
 db.MasterCustomerAccount = MasterCustomerAccount(sequelize, DataTypes);
 db.customerAccountSettings = CustomerAccountSettings(sequelize, DataTypes);
@@ -619,6 +633,15 @@ sequelize.sync({ force: false })  // force: true drops the table and recreates i
 
 
 // One-to-Many Relationship
+db.expenses.hasMany(db.expensePayments, { foreignKey: 'expenseId', as: 'payments' });
+db.expensePayments.belongsTo(db.expenses, { foreignKey: 'expenseId', as: 'expense' });
+db.financePurchases.hasMany(db.financePurchaseItems, { foreignKey: 'purchaseId', as: 'lineItems' });
+db.financePurchaseItems.belongsTo(db.financePurchases, { foreignKey: 'purchaseId', as: 'purchase' });
+db.financePurchases.hasMany(db.financePurchasePayments, { foreignKey: 'purchaseId', as: 'payments' });
+db.financePurchasePayments.belongsTo(db.financePurchases, { foreignKey: 'purchaseId', as: 'purchase' });
+db.financePurchases.belongsTo(db.financePurchaseVendors, { foreignKey: 'vendorId', as: 'vendorDetails' });
+db.bankDeposits.hasMany(db.bankDepositHistories, { foreignKey: 'depositId', as: 'history' });
+db.bankDepositHistories.belongsTo(db.bankDeposits, { foreignKey: 'depositId', as: 'deposit' });
 db.grns.hasMany(db.grnparts, { foreignKey: 'grn_id', as: 'grnparts' });
 db.grnparts.belongsTo(db.grns, { foreignKey: 'grn_id', as: 'grn' });
 db.grns.hasMany(db.stocks, { foreignKey: 'grn_id', as: 'grnstocks' });
