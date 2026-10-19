@@ -3,6 +3,7 @@ import { dearoCatalog } from "./service.js";
 import db from '../../index.js';
 import CartService from './service.js';
 import axios from "axios";
+import { getStockListService } from "../../catelog/service.js";
 import {
   getCategoryImagePath,
   getSubCategoryImagePath,
@@ -171,30 +172,8 @@ export const getVehicleCompatibility = async (req, res, next) => {
 };
 export const getStock = async (req, res, next) => {
   try {
-    const data = req.body;
-
-    if (!data?.partNumber) {
-      return res.status(400).json({ success: false, message: "Part number required" });
-    }
-
-    const payload = {
-      limit: 10,
-      offset: 0,
-      sortOrder: "ASC",
-      customerCode: "0046",
-      partNumber: data.partNumber,
-      fieldOrder: "lotAgeDate",
-      inventoryName: null,
-      entity: null,
-      software: null,
-    };
-
-    const response = await dearoCatalog("getStockList", payload);
-
-    return res.status(200).json({
-      success: true,
-      data: response.data || response,
-    });
+    const response = await getStockListService(req.body, req.user?.id);
+    return res.status(200).json(response);
   } catch (error) {
     logger.error("Error in getStock:", error.response?.data || error.message);
     return next(error);
