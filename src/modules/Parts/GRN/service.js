@@ -483,6 +483,11 @@ const generategrnpdf = async (body, user) => {
             'quantity',
             'cost',
             'discount',
+            'sgst',
+            'cgst',
+            'igst',
+            'rate',
+            'mrp',
             [
               db.Sequelize.literal(`(
                 SELECT ROUND(

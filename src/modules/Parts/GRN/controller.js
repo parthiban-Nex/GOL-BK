@@ -1457,7 +1457,7 @@ const GetStockAdjustment = async (req, res , next) => {
         return;
       }
       const responsedata = data.map((item) => {
-        const date = new Date(item.invoice_date).toISOString()
+        const date = new Date(item?.invoice_date || item.createdAt).toISOString()
         const createdDate = (item.createdAt).toISOString()
   
         const dateformat = date.slice(8, 10) + "-" + date.slice(5, 7) + "-" + date.slice(0, 4)
