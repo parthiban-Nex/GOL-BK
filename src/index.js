@@ -416,6 +416,7 @@ import clickRouter from './modules/clickins/mobileRoute.js';
 import roughEstimateRouter from './modules/roughEstimate/routes.js';
 import PartsCatalogueMobileRouter from './modules/Parts/partsCatalogue/mobileRoutes.js';
 import attendanceRouter from './modules/attendance/routes.js';
+import campaignRouter from './modules/campaigns/routes.js';
 
 
 app.use('/api/users', userRouter);
@@ -501,6 +502,7 @@ app.use('/api/erp_stock_transfer',erpStockTransferRouter);
 app.use('/api/roughEstimate', roughEstimateRouter);
 app.use('/api/partsCatalogueDms',partsCatalogueRouterDms) // old dms routes with dms token validation
 app.use('/api/attendance', attendanceRouter);
+app.use('/api/campaigns', campaignRouter);
 
 // Mobile Routes
 app.use("/api/apis/masters", mobileMastersRouter);  
